@@ -336,7 +336,7 @@ gal Mem_cache {
 	}
 	transition chech_cpt_equel_to_CACHE_TH [cpt == $CACHE_TH] label "check_cpt_equel_to_CACHE_TH" {
 	}
-	transition addition_cpt (cpt_t $cpt) [state == $VALID_MULTICAST_CLNUP && v_c_id[$cpt] == 0] label "addition_cpt" {
+	transition addition_cpt (cpt_t $cpt) [state == $MC_VALID_MULTICAST_CLNUP && v_c_id[$cpt] == 0] label "addition_cpt" {
 		cpt = cpt + 1 ;
 	}
 	transition write_cpt (cpt_t $cpt) [true] label "write_cpt" ($cpt) {
