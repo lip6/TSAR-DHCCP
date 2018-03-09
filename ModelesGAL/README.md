@@ -1,6 +1,6 @@
 # GAL Models
 
-This folder contains the Divine models built during the internship of Di Zhao, see [her report](https://github.com/lip6/TSAR-DHCCP/raw/master/Reports/rapport_dizhao_2015.pdf).
+This folder contains the GAL models built during the internship of Di Zhao, see [her report](https://github.com/lip6/TSAR-DHCCP/raw/master/Reports/rapport_dizhao_2015.pdf).
 
 The models were analyzed with [ITS-tools](http://ddd.lip6.fr).
 
