@@ -13,7 +13,7 @@ Note that directly running the models with `its-reach` or `its-ctl` will not wor
 
 The folders contain :
 * example : small models testing various features used in the real models
-* components : the individually developed components of the system. There are tests in many of these files, ie. properties that assert reachability of certain situations, built to validate the modeling.
+* components : the individually developed components of the system. There are "unit tests" in many of these files, ie. properties that assert reachability of certain situations, built to validate the modeling. Uncomment or comment those you are interested in, they come in packs corresponding to different scenarios. Some of these models do not compile (there are red error markers in eclipse) they correspond to earlier versions of the tool, the syntax having evolved slightly, and are kept for historic reasons, they can be safely ignored.
 * platform : The full assembled platform. idealtsar model is a non parametric version, the three other versions are semantically equivalent variants, that use different decompositions of the model. The most efficient version in our experiments was v2.
 * gen : some models generated for different values of the parameters from v2. These models were used to collect the data points presented in our companion paper at MARS 2018. 
 
