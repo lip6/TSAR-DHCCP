@@ -1,0 +1,122 @@
+#define p_w_rd (Processeur.wait_rd)
+#define p_w_wr (Processeur.wait_wr)
+#define p_rdy (Processeur.ready)
+
+#define ch_l1pdtack_ety (chan_L1PDTACK_full == 0)
+#define rd_addr_1 (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_addr == 1 && chan_PL1DTREQ_type == 0)
+
+#define clnup_0 (chan_L1MCCUREQ_full = 1, chan_L1MCCUREQ_type = 8 && chan_L1MCCUREQ_addr == 0)
+
+#define rd_dt (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 0)
+
+#define wr_addr_0 (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 1 && chan_PL1DTREQ_addr == 0)
+#define wr_addr_1 (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 1 && chan_PL1DTREQ_addr == 1)
+
+#define wr_0 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 0)
+#define wr_1 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 1)
+
+#define dt_rd (chan_PL1DTREQ_type == 0)
+#define dt_wr (chan_PL1DTREQ_type == 1)
+
+#define addr_req_0 (chan_PL1DTREQ_addr == 0)
+#define addr_req_1 (chan_PL1DTREQ_addr == 1)
+
+#define ack_dt_rd (chan_L1PDTACK_type == 2)
+#define ack_dt_wr (chan_L1PDTACK_type == 3)
+
+#define dt_addr_0 (cl1_addr_save == 0)
+#define dt_addr_1 (cl1_addr_save == 1)
+
+#define wr ( chan_L1MCDTREQ_type == 5)
+
+#define ack_wr (chan_MCL1DTACK_type == 7)
+
+#define cl1_ety (CacheL1.empty)
+#define cl1_v_dt (CacheL1.valid_data)
+#define cl1_ms (CacheL1.miss)
+#define cl1_wwi (CacheL1.write_wait_empty)
+
+#define addr_cache_0 (addr_cache == 0)
+#define addr_cache_1 (addr_cache == 1)
+
+#define cm_vm_0 (Mem_cache0.valid_multicast)
+#define cm_vm_1 (Mem_cache1.valid_multicast)
+
+#define cm_vm_clnup (Mem_cache1.valid_multicast_clnup)
+
+
+#define cm_vm_u_0 (Mem_cache0.valid_multicast_update)
+#define cm_vm_u_1 (Mem_cache1.valid_multicast_update)
+
+#define cm_ety_0 (Mem_cache0.empty)
+#define cm_ety_1 (Mem_cache1.empty)
+
+
+#define ligne_valid (v_cache_valide == 1)
+#define ligne_invalid (v_cache_valide == 0)
+
+#define nb_copie_addr0_vide (n_cache0 == 0)
+#define nb_copie_addr0 (n_cache0 == 1)
+
+#define nb_copie_addr1_vide (n_cache1 == 0)
+#define nb_copie_addr1 (n_cache1 == 1)
+
+
+//#property G(F(p_w_rd || p_w_wr ))  // vrai : infiniment souvent à un moment le processeur est à l'état wait_rd ou wait_wr
+//#property G((p_w_rd || p_w_wr) -> F(p_rdy))  // vrai : infiniment souvent si le processeur est à l'état wait_rd ou wait_wr alors à un moment dans le futur il passera à l'état ready
+//#property G(p_w_rd -> F(cl1_v_dt)) // vrai : infiniment souvent si le processeur est à l'état wait_rd alors à un moment dans le futur le CacheL1 passera à l'état valid_data
+
+//#property G((p_w_rd && cl1_v_dt) -> F(cl1_v_dt && ack_dt_rd))  // vrai : infiniment souvent si le processeur est à l'état wait_rd et que le CacheL1 est à l'état valid_data alors à un moment dans le future le CacheL1 reste dans le même état et répond au processeur en envoyant ACK_DT_RD  
+//#property G((p_w_wr && cl1_v_dt) -> F(cl1_v_dt && ack_dt_wr))  // vrai : infiniment souvent si le processeur est à l'état wait_wr et que le CacheL1 est à l'état valid_data alors à un moment dans le future le CacheL1 reste dans le même état et répond au processeur en envoyant ACK_DT_WR  
+
+//#property G(cl1_ms && dt_addr_0  -> F(cl1_v_dt && cm_vm_0))  // vrai : infiniment souvent si le CacheL1 est à l'état miss et reçoit une requette sur l'adresse "0" alors à un moment dans le future le cacheL1 passe à l'état valid_data et le contrôleur mémoire de l'adresse 0 passe à l'état valid_multicast 
+//#property G(cl1_ms && dt_addr_1  -> F(cl1_v_dt && cm_vm_1))  // vrai : infiniment souvent si le CacheL1 est à l'état miss et reçoit une requette sur l'adresse "1" alors à un moment dans le future le cacheL1 passe à l'état valid_data et le contrôleur mémoire de l'adresse 1 passe à l'état valid_multicast 
+
+#property G(((p_w_wr && cl1_ety) && ch_l1pdtack_ety) -> F(cl1_wwi))
+// vrai : infiniment souvent si le processeur est à l'état wait_wr et que le cacheL1 est à l'état empty et que chan_L1PDTACK_full est vide alors à un moment dans le futur le cacheL1 passe à l'état write_wait_empty   
+ 
+
+//#property G(p_w_rd -> (p_w_rd U ack_dt_rd)) // vrai : infiniment souvent si le processeur est à l'état wait_rd alors il reste dans cet état jusqu'à réception du ACK_DT_RD
+//#property G(p_w_wr -> (p_w_wr U ack_dt_wr))  // vrai : infiniment souvent si le processeur est à l'état wait_wr alors il reste dans cet état jusqu'à réception du ACK_DT_WR
+
+
+//#property G((p_w_rd && dt_addr_1) -> F(cm_vm_1)) // vrai : infiniment souvent si le processeur est à l'état (wait_rd) attente de lecture de la donnée d'adresse "1" alors à un moment dans le future le contrôleur mémoire de l'adresse 1 passe à l'état valid_multicast  
+
+//#property G((p_w_rd && cl1_v_dt && addr_cache_0 && rd_addr_1) -> F(cl1_v_dt && addr_cache_1)) // vrai : si le cacheL1 est dans l'état valid_data et contient la donnée d'adresse 0 et que le processeur envoie un RD sur la donnée d'adresse 1 alors à un moment dans le future le cacheL1 passe à l'état valid_data et contient la donnée d'adresse 1
+
+
+
+//#property G((ligne_valid && addr_cache_0) -> (nb_copie_addr0))  //pas de synchronisation : infiniment souvent si la ligne du cacheL1 est valide et contient la donnée d'adresse 0 alors à un moment dans le future le contrôleur mémoire de l'adresse 0 passe à l'état valid_multicast avec nombre de copies de la donnée d'@0 = 1 
+
+//#property G((ligne_valid && addr_cache_1) -> F(cm_vm_1 && nb_copie_addr1))  //vrai : infiniment souvent si la ligne du cacheL1 est valide et contient la donnée d'adresse 1 alors à un moment dans le future le contrôleur mémoire de l'adresse 1 passe à l'état valid_multicast avec nombre de copies de la donnée d'@1 = 1 
+
+//#property G((ligne_valid && addr_cache_0) -> F((rd_addr_1 cm_vm_1 && nb_copie_addr1) -> F(cm_vm_1 && nb_copie_addr1_vide)))  // pas de synchronisation! 
+
+//#property G(rd_dt -> F((cm_vm_0 && nb_copie_addr0) || (cm_vm_1 && nb_copie_addr1)))   //vrai : infiniment souvent si le processeur n'effectue que des lectures sur la donnée d'adresse 0 ou 1 alors à un moment dans le future soit le contrôleur mémoire d'adresse 0 passe à l'état valid_multicast avec nombre de copies d'@0 = 1 ou bien le contrôleur mémoire d'adresse 1 passe à l'état valid_multicast avec nombre de copies d'@1 = 1 
+
+//#property G(!(nb_copie_addr0 && nb_copie_addr1)) // ne marche pas! 
+//#property G((wr_addr_0 && cm_ety_0) -> F(cm_vm_0 && nb_copie_addr0_vide)) // ne marche pas! 
+//#property G((wr_addr_1 && cm_ety_1) -> F(cm_vm_1 && nb_copie_addr1_vide)) // ne marche pas! 
+
+//#property G((cm_vm_0 -> X(cm_vm_u_0 && wr_0)) -> F(cm_vm_0)) // ne marche pas! 
+
+//#property G((ligne_valid && addr_cache_0) -> ((ligne_valid && addr_cache_0 ) W X(clnup_0)))  // ne marche pas! 
+
+
+//#property G((ligne_valid && addr_cache_0) -> ((((ligne_valid && addr_cache_0 ) U (rd_addr_1)) U (ligne_invalid)) || (G (ligne_valid && addr_cache_0 ))))
+
+
+//#property G((p_w_rd && dt_addr_0 && !(cl1_v_dt)) -> F(cm_vm_0))  //  ne marche pas! 
+
+
+
+
+
+
+
+
+
+
+
+
+

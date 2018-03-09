@@ -1,0 +1,50 @@
+
+$NBMEM = 2;
+
+typedef addr_t = 0..$NBMEM-1;
+typedef type_t = 0..19 ;
+
+//gal channelIdAddrType {
+//	int isFull=0;
+//	int id=0;
+//	int addr=0;
+//	int type=0;
+//	
+//	
+//}
+
+gal channelAddrType {
+	int isFull=0;
+	int addr=0;
+	int type=0;
+	
+	transition read (addr_t $addr, type_t $rtype) [ isFull==1 && addr == $addr && type == $rtype ] label "read_$addr_$rtype" {
+		isFull = 0;
+		addr = 0;
+		type = 0;
+	}
+	
+	transition write (addr_t $addr, type_t $wtype) [ isFull==0 ] label "write_$addr_$wtype" {
+		isFull = 1;
+		addr = $addr;
+		type = $wtype;
+	}
+	
+}
+
+composite tsar {
+	channelAddrType chan_MCMEMDTREQ;
+	channelAddrType chan_MEMMCDTACK;
+	
+	
+	synchronization Memory_transmit_1 (addr_t $addr, type_t $rtype, type_t $wtype) label "" {
+		if ( ($rtype == 16 && $wtype== 18)
+			|| ($rtype == 17 && $wtype==19) ) {
+			chan_MCMEMDTREQ."read_$addr_$rtype";
+			chan_MEMMCDTACK."write_$addr_$wtype";		
+		} 
+	}
+	
+}
+
+main tsar;

@@ -1,0 +1,1899 @@
+
+GAL tsar_v5_2_2.dve
+{
+  //arrays
+  array[2] Mem_cache0.c_id= (0, 0) ;
+  array[2] Mem_cache0.v_c_id= (0, 0) ;
+  array[2] Mem_cache1.c_id= (0, 0) ;
+  array[2] Mem_cache1.v_c_id= (0, 0) ;
+  //variables
+  int chan_L1MCDTREQ_full=0;
+  int chan_L1MCDTREQ_id=0;
+  int chan_L1MCDTREQ_addr=0;
+  int chan_L1MCDTREQ_type=0;
+  int chan_MCL1DTACK_full=0;
+  int chan_MCL1DTACK_id=0;
+  int chan_MCL1DTACK_addr=0;
+  int chan_MCL1DTACK_type=0;
+  int chan_MCL1CLACK_full=0;
+  int chan_MCL1CLACK_id=0;
+  int chan_MCL1CLACK_addr=0;
+  int chan_MCL1CLACK_type=0;
+  int chan_MCL1CPREQ_full=0;
+  int chan_MCL1CPREQ_id=0;
+  int chan_MCL1CPREQ_addr=0;
+  int chan_MCL1CPREQ_type=0;
+  int chan_L1MCCPACK_full=0;
+  int chan_L1MCCPACK_id=0;
+  int chan_L1MCCPACK_addr=0;
+  int chan_L1MCCPACK_type=0;
+  int chan_MCMEMDTREQ_full=0;
+  int chan_MCMEMDTREQ_addr=0;
+  int chan_MCMEMDTREQ_type=0;
+  int chan_MEMMCDTACK_full=0;
+  int chan_MEMMCDTACK_addr=0;
+  int chan_MEMMCDTACK_type=0;
+  int chan_PL1DTREQ0_full=0;
+  int chan_PL1DTREQ0_addr=0;
+  int chan_PL1DTREQ0_type=0;
+  int chan_L1PDTACK0_full=0;
+  int chan_L1PDTACK0_addr=0;
+  int chan_L1PDTACK0_type=0;
+  int chan_PL1DTREQ1_full=0;
+  int chan_PL1DTREQ1_addr=0;
+  int chan_PL1DTREQ1_type=0;
+  int chan_L1PDTACK1_full=0;
+  int chan_L1PDTACK1_addr=0;
+  int chan_L1PDTACK1_type=0;
+  int cl1_0_addr_save=0;
+  int cl1_1_addr_save=0;
+  int cl1_2_addr_save=0;
+  int addr_cache_0=0;
+  int addr_cache_1=0;
+  int addr_cache_2=0;
+  int v_cache_valid_0=0;
+  int v_cache_valid_1=0;
+  int v_cache_valid_2=0;
+  int n_copies_0=0;
+  int n_copies_1=0;
+  int error=0;
+  int Processeur0.state=0;
+  int Processeur0.addr=0;
+  int Processeur1.state=0;
+  int Processeur1.addr=0;
+  int CacheL1_0.state=0;
+  int CacheL1_0.v_addr=0;
+  int CacheL1_0.addr_save=0;
+  int CacheL1_0.id=0;
+  int CacheL1_1.state=0;
+  int CacheL1_1.v_addr=0;
+  int CacheL1_1.addr_save=0;
+  int CacheL1_1.id=1;
+  int Mem_cache0.state=0;
+  int Mem_cache0.src_save=0;
+  int Mem_cache0.ligne_addr=0;
+  int Mem_cache0.dirty=0;
+  int Mem_cache0.cpt=0;
+  int Mem_cache0.cpt_clnup=0;
+  int Mem_cache0.rsp_cpt=0;
+  int Mem_cache0.src_save_clnup=0;
+  int Mem_cache1.state=0;
+  int Mem_cache1.src_save=0;
+  int Mem_cache1.ligne_addr=1;
+  int Mem_cache1.dirty=0;
+  int Mem_cache1.cpt=0;
+  int Mem_cache1.cpt_clnup=0;
+  int Mem_cache1.rsp_cpt=0;
+  int Mem_cache1.src_save_clnup=0;
+  //transitions 
+  transition t0  [ ( ( Processeur0.state == 0 ) && ( chan_PL1DTREQ0_full == 0 ) ) ] 
+     {     Processeur0.state = 1;
+    chan_PL1DTREQ0_full = 1;
+    chan_PL1DTREQ0_addr = 0;
+    chan_PL1DTREQ0_type = 0;
+    Processeur0.addr = 0;
+    }
+
+  transition t1  [ ( ( Processeur0.state == 0 ) && ( chan_PL1DTREQ0_full == 0 ) ) ] 
+     {     Processeur0.state = 2;
+    chan_PL1DTREQ0_full = 1;
+    chan_PL1DTREQ0_addr = 0;
+    chan_PL1DTREQ0_type = 1;
+    Processeur0.addr = 0;
+    }
+
+  transition t2  [ ( ( Processeur0.state == 0 ) && ( chan_PL1DTREQ0_full == 0 ) ) ] 
+     {     Processeur0.state = 1;
+    chan_PL1DTREQ0_full = 1;
+    chan_PL1DTREQ0_addr = 1;
+    chan_PL1DTREQ0_type = 0;
+    Processeur0.addr = 1;
+    }
+
+  transition t3  [ ( ( Processeur0.state == 0 ) && ( chan_PL1DTREQ0_full == 0 ) ) ] 
+     {     Processeur0.state = 2;
+    chan_PL1DTREQ0_full = 1;
+    chan_PL1DTREQ0_addr = 1;
+    chan_PL1DTREQ0_type = 1;
+    Processeur0.addr = 1;
+    }
+
+  transition t4  [ ( ( Processeur0.state == 1 ) && ( Processeur0.addr == chan_L1PDTACK0_addr ) && ( chan_L1PDTACK0_type == 2 ) && ( chan_L1PDTACK0_full == 1 ) ) ] 
+     {     Processeur0.state = 0;
+    chan_L1PDTACK0_full = 0;
+    chan_L1PDTACK0_addr = 0;
+    chan_L1PDTACK0_type = 0;
+    Processeur0.addr = 0;
+    chan_PL1DTREQ0_full = 0;
+    chan_PL1DTREQ0_type = 0;
+    chan_PL1DTREQ0_addr = 0;
+    }
+
+  transition t5  [ ( ( Processeur0.state == 2 ) && ( Processeur0.addr == chan_L1PDTACK0_addr ) && ( chan_L1PDTACK0_type == 3 ) && ( chan_L1PDTACK0_full == 1 ) ) ] 
+     {     Processeur0.state = 0;
+    chan_L1PDTACK0_full = 0;
+    chan_L1PDTACK0_addr = 0;
+    chan_L1PDTACK0_type = 0;
+    Processeur0.addr = 0;
+    chan_PL1DTREQ0_full = 0;
+    chan_PL1DTREQ0_type = 0;
+    chan_PL1DTREQ0_addr = 0;
+    }
+
+  transition t6  [ ( ( Processeur1.state == 0 ) && ( chan_PL1DTREQ1_full == 0 ) ) ] 
+     {     Processeur1.state = 1;
+    chan_PL1DTREQ1_full = 1;
+    chan_PL1DTREQ1_addr = 0;
+    chan_PL1DTREQ1_type = 0;
+    Processeur1.addr = 0;
+    }
+
+  transition t7  [ ( ( Processeur1.state == 0 ) && ( chan_PL1DTREQ1_full == 0 ) ) ] 
+     {     Processeur1.state = 2;
+    chan_PL1DTREQ1_full = 1;
+    chan_PL1DTREQ1_addr = 0;
+    chan_PL1DTREQ1_type = 1;
+    Processeur1.addr = 0;
+    }
+
+  transition t8  [ ( ( Processeur1.state == 0 ) && ( chan_PL1DTREQ1_full == 0 ) ) ] 
+     {     Processeur1.state = 1;
+    chan_PL1DTREQ1_full = 1;
+    chan_PL1DTREQ1_addr = 1;
+    chan_PL1DTREQ1_type = 0;
+    Processeur1.addr = 1;
+    }
+
+  transition t9  [ ( ( Processeur1.state == 0 ) && ( chan_PL1DTREQ1_full == 0 ) ) ] 
+     {     Processeur1.state = 2;
+    chan_PL1DTREQ1_full = 1;
+    chan_PL1DTREQ1_addr = 1;
+    chan_PL1DTREQ1_type = 1;
+    Processeur1.addr = 1;
+    }
+
+  transition t10  [ ( ( Processeur1.state == 1 ) && ( Processeur1.addr == chan_L1PDTACK1_addr ) && ( chan_L1PDTACK1_type == 2 ) && ( chan_L1PDTACK1_full == 1 ) ) ] 
+     {     Processeur1.state = 0;
+    chan_L1PDTACK1_full = 0;
+    chan_L1PDTACK1_addr = 0;
+    chan_L1PDTACK1_type = 0;
+    Processeur1.addr = 0;
+    chan_PL1DTREQ1_full = 0;
+    chan_PL1DTREQ1_type = 0;
+    chan_PL1DTREQ1_addr = 0;
+    }
+
+  transition t11  [ ( ( Processeur1.state == 2 ) && ( Processeur1.addr == chan_L1PDTACK1_addr ) && ( chan_L1PDTACK1_type == 3 ) && ( chan_L1PDTACK1_full == 1 ) ) ] 
+     {     Processeur1.state = 0;
+    chan_L1PDTACK1_full = 0;
+    chan_L1PDTACK1_addr = 0;
+    chan_L1PDTACK1_type = 0;
+    Processeur1.addr = 0;
+    chan_PL1DTREQ1_full = 0;
+    chan_PL1DTREQ1_type = 0;
+    chan_PL1DTREQ1_addr = 0;
+    }
+
+  transition t12  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 0 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 0;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t13  [ ( ( CacheL1_0.state == 0 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 0;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_type = 15;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t14  [ ( ( chan_PL1DTREQ0_full == 1 ) && ( chan_PL1DTREQ0_type == 0 ) && ( CacheL1_0.state == 0 ) && ( chan_L1MCDTREQ_full == 0 ) ) ] 
+     {     CacheL1_0.state = 1;
+    CacheL1_0.addr_save = chan_PL1DTREQ0_addr;
+    cl1_0_addr_save = CacheL1_0.addr_save;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_type = 4;
+    chan_L1MCDTREQ_id = CacheL1_0.id;
+    chan_L1MCDTREQ_addr = CacheL1_0.addr_save;
+    chan_PL1DTREQ0_full = 0;
+    chan_PL1DTREQ0_type = 0;
+    chan_PL1DTREQ0_addr = 0;
+    }
+
+  transition t15  [ ( ( chan_PL1DTREQ0_full == 1 ) && ( chan_PL1DTREQ0_type == 1 ) && ( CacheL1_0.state == 0 ) && ( chan_L1MCDTREQ_full == 0 ) ) ] 
+     {     CacheL1_0.state = 7;
+    CacheL1_0.addr_save = chan_PL1DTREQ0_addr;
+    cl1_0_addr_save = CacheL1_0.addr_save;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_id = CacheL1_0.id;
+    chan_L1MCDTREQ_addr = chan_PL1DTREQ0_addr;
+    chan_L1MCDTREQ_type = 5;
+    chan_PL1DTREQ0_full = 0;
+    chan_PL1DTREQ0_addr = 0;
+    chan_PL1DTREQ0_type = 0;
+    }
+
+  transition t16  [ ( ( CacheL1_0.state == 1 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 8;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t17  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 1 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_0.addr_save ) ) ] 
+     {     CacheL1_0.state = 9;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t18  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 1 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr != CacheL1_0.addr_save ) ) ] 
+     {     CacheL1_0.state = 1;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t19  [ ( ( chan_L1PDTACK0_full == 0 ) && ( CacheL1_0.state == 1 ) && ( chan_MCL1DTACK_addr == CacheL1_0.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_0.id ) && ( chan_MCL1DTACK_type == 6 ) && ( chan_MCL1DTACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 5;
+    v_cache_valid_0 = 1;
+    CacheL1_0.v_addr = CacheL1_0.addr_save;
+    addr_cache_0 = CacheL1_0.v_addr;
+    chan_L1PDTACK0_full = 1;
+    chan_L1PDTACK0_type = 2;
+    chan_L1PDTACK0_addr = CacheL1_0.addr_save;
+    CacheL1_0.addr_save = 0;
+    cl1_0_addr_save = 0;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    }
+
+  transition t20  [ ( ( CacheL1_0.state == 2 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 2;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t21  [ ( ( CacheL1_0.state == 2 ) && ( chan_MCL1CLACK_id == CacheL1_0.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 13;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t22  [ ( ( CacheL1_0.state == 3 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 3;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t23  [ ( ( CacheL1_0.state == 3 ) && ( chan_MCL1CLACK_id == CacheL1_0.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 13;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t24  [ ( ( CacheL1_0.state == 4 ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 3;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = CacheL1_0.addr_save;
+    }
+
+  transition t25  [ ( ( CacheL1_0.state == 4 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 4;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t26  [ ( ( chan_PL1DTREQ0_full == 1 ) && ( chan_PL1DTREQ0_addr == CacheL1_0.v_addr ) && ( chan_PL1DTREQ0_type == 0 ) && ( chan_L1PDTACK0_full == 0 ) && ( CacheL1_0.state == 5 ) ) ] 
+     {     CacheL1_0.state = 5;
+    chan_L1PDTACK0_full = 1;
+    chan_L1PDTACK0_type = 2;
+    chan_L1PDTACK0_addr = chan_PL1DTREQ0_addr;
+    chan_PL1DTREQ0_full = 0;
+    chan_PL1DTREQ0_addr = 0;
+    chan_PL1DTREQ0_type = 0;
+    }
+
+  transition t27  [ ( ( CacheL1_0.state == 5 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 5;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t28  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 5 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr != CacheL1_0.v_addr ) ) ] 
+     {     CacheL1_0.state = 5;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t29  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 5 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_0.v_addr ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 10;
+    CacheL1_0.v_addr = 0;
+    addr_cache_0 = CacheL1_0.v_addr;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    v_cache_valid_0 = 0;
+    }
+
+  transition t30  [ ( ( chan_PL1DTREQ0_full == 1 ) && ( chan_PL1DTREQ0_type == 0 ) && ( CacheL1_0.state == 5 ) && ( chan_L1MCCPACK_full == 0 ) && ( chan_PL1DTREQ0_addr != CacheL1_0.v_addr ) ) ] 
+     {     CacheL1_0.state = 2;
+    CacheL1_0.addr_save = chan_PL1DTREQ0_addr;
+    cl1_0_addr_save = CacheL1_0.addr_save;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = CacheL1_0.v_addr;
+    chan_PL1DTREQ0_full = 0;
+    chan_PL1DTREQ0_addr = 0;
+    chan_PL1DTREQ0_type = 0;
+    CacheL1_0.v_addr = 0;
+    addr_cache_0 = CacheL1_0.v_addr;
+    v_cache_valid_0 = 0;
+    }
+
+  transition t31  [ ( ( chan_PL1DTREQ0_full == 1 ) && ( chan_PL1DTREQ0_type == 1 ) && ( CacheL1_0.state == 5 ) && ( chan_L1MCDTREQ_full == 0 ) ) ] 
+     {     CacheL1_0.state = 6;
+    CacheL1_0.addr_save = chan_PL1DTREQ0_addr;
+    cl1_0_addr_save = CacheL1_0.addr_save;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_type = 5;
+    chan_L1MCDTREQ_id = CacheL1_0.id;
+    chan_L1MCDTREQ_addr = chan_PL1DTREQ0_addr;
+    chan_PL1DTREQ0_full = 0;
+    chan_PL1DTREQ0_addr = 0;
+    chan_PL1DTREQ0_type = 0;
+    }
+
+  transition t32  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 6 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr != CacheL1_0.v_addr ) ) ] 
+     {     CacheL1_0.state = 6;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t33  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 6 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_0.v_addr ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 11;
+    CacheL1_0.v_addr = 0;
+    addr_cache_0 = CacheL1_0.v_addr;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    v_cache_valid_0 = 0;
+    }
+
+  transition t34  [ ( ( chan_L1PDTACK0_full == 0 ) && ( CacheL1_0.state == 6 ) && ( chan_MCL1DTACK_addr == CacheL1_0.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_0.id ) && ( chan_MCL1DTACK_type == 7 ) && ( chan_MCL1DTACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 5;
+    chan_L1PDTACK0_full = 1;
+    chan_L1PDTACK0_addr = chan_MCL1DTACK_addr;
+    chan_L1PDTACK0_type = 3;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    CacheL1_0.addr_save = 0;
+    cl1_0_addr_save = 0;
+    }
+
+  transition t35  [ ( ( CacheL1_0.state == 6 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_0.v_addr ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 6;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t36  [ ( ( CacheL1_0.state == 6 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) && ( chan_MCL1CPREQ_addr != CacheL1_0.v_addr ) ) ] 
+     {     CacheL1_0.state = 6;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t37  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 7 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 7;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t38  [ ( ( chan_L1PDTACK0_full == 0 ) && ( CacheL1_0.state == 7 ) && ( CacheL1_0.addr_save == chan_MCL1DTACK_addr ) && ( chan_MCL1DTACK_id == CacheL1_0.id ) && ( chan_MCL1DTACK_type == 7 ) && ( chan_MCL1DTACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 0;
+    chan_L1PDTACK0_full = 1;
+    chan_L1PDTACK0_addr = CacheL1_0.addr_save;
+    chan_L1PDTACK0_type = 3;
+    CacheL1_0.addr_save = 0;
+    cl1_0_addr_save = 0;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    chan_MCL1DTACK_type = 0;
+    }
+
+  transition t39  [ ( ( CacheL1_0.state == 7 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 7;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_type = 15;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t40  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( CacheL1_0.state == 8 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 8;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t41  [ ( ( CacheL1_0.state == 8 ) && ( chan_MCL1DTACK_addr == CacheL1_0.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_0.id ) && ( chan_MCL1DTACK_type == 6 ) && ( chan_MCL1DTACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 4;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    }
+
+  transition t42  [ ( ( CacheL1_0.state == 9 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 9;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t43  [ ( ( CacheL1_0.state == 9 ) && ( chan_MCL1DTACK_addr == CacheL1_0.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_0.id ) && ( chan_MCL1DTACK_type == 6 ) && ( chan_MCL1DTACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 4;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    }
+
+  transition t44  [ ( ( CacheL1_0.state == 10 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 10;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t45  [ ( ( CacheL1_0.state == 10 ) && ( chan_MCL1CLACK_id == CacheL1_0.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 0;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t46  [ ( ( CacheL1_0.state == 11 ) && ( chan_MCL1CLACK_id == CacheL1_0.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 7;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t47  [ ( ( chan_L1PDTACK0_full == 0 ) && ( CacheL1_0.state == 11 ) && ( chan_MCL1DTACK_addr == CacheL1_0.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_0.id ) && ( chan_MCL1DTACK_type == 7 ) && ( chan_MCL1DTACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 12;
+    chan_L1PDTACK0_full = 1;
+    chan_L1PDTACK0_addr = chan_MCL1DTACK_addr;
+    chan_L1PDTACK0_type = 3;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    CacheL1_0.addr_save = 0;
+    cl1_0_addr_save = 0;
+    }
+
+  transition t48  [ ( ( CacheL1_0.state == 11 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 11;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t49  [ ( ( CacheL1_0.state == 12 ) && ( chan_MCL1CLACK_id == CacheL1_0.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) ) ] 
+     {     CacheL1_0.state = 0;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t50  [ ( ( CacheL1_0.state == 12 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 12;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t51  [ ( ( CacheL1_0.state == 13 ) && ( chan_L1MCDTREQ_full == 0 ) ) ] 
+     {     CacheL1_0.state = 1;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_type = 4;
+    chan_L1MCDTREQ_id = CacheL1_0.id;
+    chan_L1MCDTREQ_addr = CacheL1_0.addr_save;
+    }
+
+  transition t52  [ ( ( CacheL1_0.state == 13 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) ) ] 
+     {     CacheL1_0.state = 13;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t53  [ ( ( CacheL1_0.state == 13 ) && ( chan_MCL1CPREQ_id == CacheL1_0.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) ) ] 
+     {     CacheL1_0.state = 13;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_id = CacheL1_0.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_type = 15;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t54  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 0 ) ) ] 
+     {     CacheL1_1.state = 0;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t55  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 0 ) ) ] 
+     {     CacheL1_1.state = 0;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_type = 15;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t56  [ ( ( chan_PL1DTREQ1_full == 1 ) && ( chan_PL1DTREQ1_type == 0 ) && ( chan_L1MCDTREQ_full == 0 ) && ( CacheL1_1.state == 0 ) ) ] 
+     {     CacheL1_1.state = 1;
+    CacheL1_1.addr_save = chan_PL1DTREQ1_addr;
+    cl1_1_addr_save = CacheL1_1.addr_save;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_type = 4;
+    chan_L1MCDTREQ_id = CacheL1_1.id;
+    chan_L1MCDTREQ_addr = CacheL1_1.addr_save;
+    chan_PL1DTREQ1_full = 0;
+    chan_PL1DTREQ1_type = 0;
+    chan_PL1DTREQ1_addr = 0;
+    }
+
+  transition t57  [ ( ( chan_PL1DTREQ1_full == 1 ) && ( chan_PL1DTREQ1_type == 1 ) && ( chan_L1MCDTREQ_full == 0 ) && ( CacheL1_1.state == 0 ) ) ] 
+     {     CacheL1_1.state = 7;
+    CacheL1_1.addr_save = chan_PL1DTREQ1_addr;
+    cl1_1_addr_save = CacheL1_1.addr_save;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_id = CacheL1_1.id;
+    chan_L1MCDTREQ_addr = chan_PL1DTREQ1_addr;
+    chan_L1MCDTREQ_type = 5;
+    chan_PL1DTREQ1_full = 0;
+    chan_PL1DTREQ1_addr = 0;
+    chan_PL1DTREQ1_type = 0;
+    }
+
+  transition t58  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 1 ) ) ] 
+     {     CacheL1_1.state = 8;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t59  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_1.addr_save ) && ( CacheL1_1.state == 1 ) ) ] 
+     {     CacheL1_1.state = 9;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t60  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 1 ) && ( chan_MCL1CPREQ_addr != CacheL1_1.addr_save ) ) ] 
+     {     CacheL1_1.state = 1;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t61  [ ( ( chan_L1PDTACK1_full == 0 ) && ( chan_MCL1DTACK_addr == CacheL1_1.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_1.id ) && ( chan_MCL1DTACK_type == 6 ) && ( chan_MCL1DTACK_full == 1 ) && ( CacheL1_1.state == 1 ) ) ] 
+     {     CacheL1_1.state = 5;
+    v_cache_valid_1 = 1;
+    CacheL1_1.v_addr = CacheL1_1.addr_save;
+    addr_cache_1 = CacheL1_1.v_addr;
+    chan_L1PDTACK1_full = 1;
+    chan_L1PDTACK1_type = 2;
+    chan_L1PDTACK1_addr = CacheL1_1.addr_save;
+    CacheL1_1.addr_save = 0;
+    cl1_1_addr_save = 0;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    }
+
+  transition t62  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 2 ) ) ] 
+     {     CacheL1_1.state = 2;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t63  [ ( ( chan_MCL1CLACK_id == CacheL1_1.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) && ( CacheL1_1.state == 2 ) ) ] 
+     {     CacheL1_1.state = 13;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t64  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 3 ) ) ] 
+     {     CacheL1_1.state = 3;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t65  [ ( ( chan_MCL1CLACK_id == CacheL1_1.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) && ( CacheL1_1.state == 3 ) ) ] 
+     {     CacheL1_1.state = 13;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t66  [ ( ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 4 ) ) ] 
+     {     CacheL1_1.state = 3;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = CacheL1_1.addr_save;
+    }
+
+  transition t67  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 4 ) ) ] 
+     {     CacheL1_1.state = 4;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t68  [ ( ( chan_PL1DTREQ1_full == 1 ) && ( chan_PL1DTREQ1_addr == CacheL1_1.v_addr ) && ( chan_PL1DTREQ1_type == 0 ) && ( chan_L1PDTACK1_full == 0 ) && ( CacheL1_1.state == 5 ) ) ] 
+     {     CacheL1_1.state = 5;
+    chan_L1PDTACK1_full = 1;
+    chan_L1PDTACK1_type = 2;
+    chan_L1PDTACK1_addr = chan_PL1DTREQ1_addr;
+    chan_PL1DTREQ1_full = 0;
+    chan_PL1DTREQ1_addr = 0;
+    chan_PL1DTREQ1_type = 0;
+    }
+
+  transition t69  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 5 ) ) ] 
+     {     CacheL1_1.state = 5;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t70  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 5 ) && ( chan_MCL1CPREQ_addr != CacheL1_1.v_addr ) ) ] 
+     {     CacheL1_1.state = 5;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t71  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_1.v_addr ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 5 ) ) ] 
+     {     CacheL1_1.state = 10;
+    CacheL1_1.v_addr = 0;
+    addr_cache_1 = CacheL1_1.v_addr;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    v_cache_valid_1 = 0;
+    }
+
+  transition t72  [ ( ( chan_PL1DTREQ1_full == 1 ) && ( chan_PL1DTREQ1_type == 0 ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 5 ) && ( chan_PL1DTREQ1_addr != CacheL1_1.v_addr ) ) ] 
+     {     CacheL1_1.state = 2;
+    CacheL1_1.addr_save = chan_PL1DTREQ1_addr;
+    cl1_1_addr_save = CacheL1_1.addr_save;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = CacheL1_1.v_addr;
+    chan_PL1DTREQ1_full = 0;
+    chan_PL1DTREQ1_addr = 0;
+    chan_PL1DTREQ1_type = 0;
+    CacheL1_1.v_addr = 0;
+    addr_cache_1 = CacheL1_1.v_addr;
+    v_cache_valid_1 = 0;
+    }
+
+  transition t73  [ ( ( chan_PL1DTREQ1_full == 1 ) && ( chan_PL1DTREQ1_type == 1 ) && ( chan_L1MCDTREQ_full == 0 ) && ( CacheL1_1.state == 5 ) ) ] 
+     {     CacheL1_1.state = 6;
+    CacheL1_1.addr_save = chan_PL1DTREQ1_addr;
+    cl1_1_addr_save = CacheL1_1.addr_save;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_type = 5;
+    chan_L1MCDTREQ_id = CacheL1_1.id;
+    chan_L1MCDTREQ_addr = chan_PL1DTREQ1_addr;
+    chan_PL1DTREQ1_full = 0;
+    chan_PL1DTREQ1_addr = 0;
+    chan_PL1DTREQ1_type = 0;
+    }
+
+  transition t74  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 6 ) && ( chan_MCL1CPREQ_addr != CacheL1_1.v_addr ) ) ] 
+     {     CacheL1_1.state = 6;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t75  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_1.v_addr ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 6 ) ) ] 
+     {     CacheL1_1.state = 11;
+    CacheL1_1.v_addr = 0;
+    addr_cache_1 = CacheL1_1.v_addr;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 8;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    v_cache_valid_1 = 0;
+    }
+
+  transition t76  [ ( ( chan_L1PDTACK1_full == 0 ) && ( chan_MCL1DTACK_addr == CacheL1_1.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_1.id ) && ( chan_MCL1DTACK_type == 7 ) && ( chan_MCL1DTACK_full == 1 ) && ( CacheL1_1.state == 6 ) ) ] 
+     {     CacheL1_1.state = 5;
+    chan_L1PDTACK1_full = 1;
+    chan_L1PDTACK1_addr = chan_MCL1DTACK_addr;
+    chan_L1PDTACK1_type = 3;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    CacheL1_1.addr_save = 0;
+    cl1_1_addr_save = 0;
+    }
+
+  transition t77  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_MCL1CPREQ_addr == CacheL1_1.v_addr ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 6 ) ) ] 
+     {     CacheL1_1.state = 6;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t78  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 6 ) && ( chan_MCL1CPREQ_addr != CacheL1_1.v_addr ) ) ] 
+     {     CacheL1_1.state = 6;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_type = 15;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t79  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 7 ) ) ] 
+     {     CacheL1_1.state = 7;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t80  [ ( ( chan_L1PDTACK1_full == 0 ) && ( chan_MCL1DTACK_id == CacheL1_1.id ) && ( chan_MCL1DTACK_type == 7 ) && ( chan_MCL1DTACK_full == 1 ) && ( CacheL1_1.state == 7 ) && ( CacheL1_1.addr_save == chan_MCL1DTACK_addr ) ) ] 
+     {     CacheL1_1.state = 0;
+    chan_L1PDTACK1_full = 1;
+    chan_L1PDTACK1_addr = CacheL1_1.addr_save;
+    chan_L1PDTACK1_type = 3;
+    CacheL1_1.addr_save = 0;
+    cl1_1_addr_save = 0;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    chan_MCL1DTACK_type = 0;
+    }
+
+  transition t81  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 7 ) ) ] 
+     {     CacheL1_1.state = 7;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_type = 15;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t82  [ ( ( ( chan_MCL1CPREQ_type == 10 ) || ( chan_MCL1CPREQ_type == 11 ) ) && ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 8 ) ) ] 
+     {     CacheL1_1.state = 8;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t83  [ ( ( chan_MCL1DTACK_addr == CacheL1_1.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_1.id ) && ( chan_MCL1DTACK_type == 6 ) && ( chan_MCL1DTACK_full == 1 ) && ( CacheL1_1.state == 8 ) ) ] 
+     {     CacheL1_1.state = 4;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    }
+
+  transition t84  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 9 ) ) ] 
+     {     CacheL1_1.state = 9;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t85  [ ( ( chan_MCL1DTACK_addr == CacheL1_1.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_1.id ) && ( chan_MCL1DTACK_type == 6 ) && ( chan_MCL1DTACK_full == 1 ) && ( CacheL1_1.state == 9 ) ) ] 
+     {     CacheL1_1.state = 4;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    }
+
+  transition t86  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 10 ) ) ] 
+     {     CacheL1_1.state = 10;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t87  [ ( ( chan_MCL1CLACK_id == CacheL1_1.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) && ( CacheL1_1.state == 10 ) ) ] 
+     {     CacheL1_1.state = 0;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t88  [ ( ( chan_MCL1CLACK_id == CacheL1_1.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) && ( CacheL1_1.state == 11 ) ) ] 
+     {     CacheL1_1.state = 7;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t89  [ ( ( chan_L1PDTACK1_full == 0 ) && ( chan_MCL1DTACK_addr == CacheL1_1.addr_save ) && ( chan_MCL1DTACK_id == CacheL1_1.id ) && ( chan_MCL1DTACK_type == 7 ) && ( chan_MCL1DTACK_full == 1 ) && ( CacheL1_1.state == 11 ) ) ] 
+     {     CacheL1_1.state = 12;
+    chan_L1PDTACK1_full = 1;
+    chan_L1PDTACK1_addr = chan_MCL1DTACK_addr;
+    chan_L1PDTACK1_type = 3;
+    chan_MCL1DTACK_full = 0;
+    chan_MCL1DTACK_type = 0;
+    chan_MCL1DTACK_id = 0;
+    chan_MCL1DTACK_addr = 0;
+    CacheL1_1.addr_save = 0;
+    cl1_1_addr_save = 0;
+    }
+
+  transition t90  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 11 ) ) ] 
+     {     CacheL1_1.state = 11;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t91  [ ( ( chan_MCL1CLACK_id == CacheL1_1.id ) && ( chan_MCL1CLACK_type == 9 ) && ( chan_MCL1CLACK_full == 1 ) && ( CacheL1_1.state == 12 ) ) ] 
+     {     CacheL1_1.state = 0;
+    chan_MCL1CLACK_full = 0;
+    chan_MCL1CLACK_type = 0;
+    chan_MCL1CLACK_id = 0;
+    chan_MCL1CLACK_addr = 0;
+    }
+
+  transition t92  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 12 ) ) ] 
+     {     CacheL1_1.state = 12;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t93  [ ( ( chan_L1MCDTREQ_full == 0 ) && ( CacheL1_1.state == 13 ) ) ] 
+     {     CacheL1_1.state = 1;
+    chan_L1MCDTREQ_full = 1;
+    chan_L1MCDTREQ_type = 4;
+    chan_L1MCDTREQ_id = CacheL1_1.id;
+    chan_L1MCDTREQ_addr = CacheL1_1.addr_save;
+    }
+
+  transition t94  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 10 ) && ( chan_MCL1CPREQ_full == 1 ) && ( CacheL1_1.state == 13 ) ) ] 
+     {     CacheL1_1.state = 13;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t95  [ ( ( chan_MCL1CPREQ_id == CacheL1_1.id ) && ( chan_MCL1CPREQ_type == 12 ) && ( chan_MCL1CPREQ_full == 1 ) && ( chan_L1MCCPACK_full == 0 ) && ( CacheL1_1.state == 13 ) ) ] 
+     {     CacheL1_1.state = 13;
+    chan_L1MCCPACK_full = 1;
+    chan_L1MCCPACK_id = CacheL1_1.id;
+    chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr;
+    chan_L1MCCPACK_type = 15;
+    chan_MCL1CPREQ_full = 0;
+    chan_MCL1CPREQ_type = 0;
+    chan_MCL1CPREQ_id = 0;
+    chan_MCL1CPREQ_addr = 0;
+    }
+
+  transition t96  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( Mem_cache0.state == 0 ) && ( chan_MCMEMDTREQ_full == 0 ) ) ] 
+     {     Mem_cache0.state = 1;
+    chan_MCMEMDTREQ_full = 1;
+    chan_MCMEMDTREQ_type = 16;
+    Mem_cache0.src_save = chan_L1MCDTREQ_id;
+    chan_MCMEMDTREQ_addr = Mem_cache0.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t97  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( Mem_cache0.state == 0 ) && ( chan_MCMEMDTREQ_full == 0 ) ) ] 
+     {     Mem_cache0.state = 2;
+    chan_MCMEMDTREQ_full = 1;
+    chan_MCMEMDTREQ_type = 16;
+    Mem_cache0.src_save = chan_L1MCDTREQ_id;
+    chan_MCMEMDTREQ_addr = Mem_cache0.ligne_addr;
+    Mem_cache0.dirty = 1;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t98  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 1 ) ) ] 
+     {     Mem_cache0.state = 1;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    Mem_cache0.dirty = 1;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    }
+
+  transition t99  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 1 ) && ( chan_MEMMCDTACK_addr == Mem_cache0.ligne_addr ) && ( chan_MEMMCDTACK_type == 18 ) && ( chan_MEMMCDTACK_full == 1 ) ) ] 
+     {     Mem_cache0.state = 4;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1DTACK_id = Mem_cache0.src_save;
+    Mem_cache0.c_id[0] = Mem_cache0.src_save;
+    Mem_cache0.v_c_id[0] = 1;
+    n_copies_0 = 1;
+    Mem_cache0.src_save = 0;
+    chan_MEMMCDTACK_full = 0;
+    chan_MEMMCDTACK_type = 0;
+    chan_MEMMCDTACK_addr = 0;
+    }
+
+  transition t100  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 2 ) ) ] 
+     {     Mem_cache0.state = 3;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = Mem_cache0.src_save;
+    Mem_cache0.src_save = 0;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    }
+
+  transition t101  [ ( ( Mem_cache0.state == 3 ) && ( chan_MEMMCDTACK_addr == Mem_cache0.ligne_addr ) && ( chan_MEMMCDTACK_type == 18 ) && ( chan_MEMMCDTACK_full == 1 ) ) ] 
+     {     Mem_cache0.state = 4;
+    chan_MEMMCDTACK_full = 0;
+    chan_MEMMCDTACK_type = 0;
+    chan_MEMMCDTACK_addr = 0;
+    n_copies_0 = 0;
+    }
+
+  transition t102  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( Mem_cache0.state == 4 ) && ( n_copies_0 < 2 ) ) ] 
+     {     Mem_cache0.state = 15;
+    Mem_cache0.src_save = chan_L1MCDTREQ_id;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    }
+
+  transition t103  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 4 ) && ( n_copies_0 >= 2 ) ) ] 
+     {     Mem_cache0.state = 14;
+    n_copies_0 = ( 1 + n_copies_0 );
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t104  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( Mem_cache0.state == 4 ) && ( n_copies_0 > 0 ) ) ] 
+     {     Mem_cache0.state = 7;
+    Mem_cache0.dirty = 1;
+    Mem_cache0.src_save = chan_L1MCDTREQ_id;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t105  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 4 ) && ( n_copies_0 == 0 ) ) ] 
+     {     Mem_cache0.state = 4;
+    Mem_cache0.dirty = 1;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t106  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( Mem_cache0.state == 4 ) ) ] 
+     {     Mem_cache0.state = 5;
+    Mem_cache0.src_save = chan_L1MCCPACK_id;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t107  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 5 ) && ( Mem_cache0.cpt == 2 ) ) ] 
+     {     Mem_cache0.state = 4;
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache0.src_save;
+    Mem_cache0.src_save = 0;
+    Mem_cache0.cpt = 0;
+    error = 1;
+    }
+
+  transition t108  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 5 ) && ( Mem_cache0.c_id[Mem_cache0.cpt] == Mem_cache0.src_save ) && ( Mem_cache0.v_c_id[Mem_cache0.cpt] == 1 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 4;
+    Mem_cache0.v_c_id[Mem_cache0.cpt] = 0;
+    Mem_cache0.c_id[Mem_cache0.cpt] = 0;
+    n_copies_0 = ( n_copies_0 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache0.src_save;
+    Mem_cache0.src_save = 0;
+    Mem_cache0.cpt = 0;
+    }
+
+  transition t109  [ ( ( ( Mem_cache0.c_id[Mem_cache0.cpt] != Mem_cache0.src_save ) || ( Mem_cache0.v_c_id[Mem_cache0.cpt] != 1 ) ) && ( Mem_cache0.state == 5 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 5;
+    Mem_cache0.cpt = ( 1 + Mem_cache0.cpt );
+    }
+
+  transition t110  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 6 ) ) ] 
+     {     Mem_cache0.state = 6;
+    n_copies_0 = ( 1 + n_copies_0 );
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    }
+
+  transition t111  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 6 ) && ( n_copies_0 == 0 ) ) ] 
+     {     Mem_cache0.state = 6;
+    Mem_cache0.dirty = 1;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t112  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache0.ligne_addr ) && ( Mem_cache0.state == 6 ) && ( n_copies_0 > 0 ) ) ] 
+     {     Mem_cache0.state = 8;
+    Mem_cache0.dirty = 1;
+    Mem_cache0.src_save = chan_L1MCDTREQ_id;
+    Mem_cache0.rsp_cpt = n_copies_0;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    n_copies_0 = 0;
+    }
+
+  transition t113  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 6 ) ) ] 
+     {     Mem_cache0.state = 6;
+    n_copies_0 = ( n_copies_0 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_id = chan_L1MCCPACK_id;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    chan_L1MCCPACK_addr = 0;
+    }
+
+  transition t114  [ ( ( chan_MCL1CPREQ_full == 0 ) && ( Mem_cache0.state == 7 ) && ( Mem_cache0.v_c_id[Mem_cache0.cpt] == 1 ) && ( Mem_cache0.c_id[Mem_cache0.cpt] != Mem_cache0.src_save ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 7;
+    Mem_cache0.rsp_cpt = ( 1 + Mem_cache0.rsp_cpt );
+    chan_MCL1CPREQ_full = 1;
+    chan_MCL1CPREQ_type = 12;
+    chan_MCL1CPREQ_addr = Mem_cache0.ligne_addr;
+    chan_MCL1CPREQ_id = Mem_cache0.c_id[Mem_cache0.cpt];
+    Mem_cache0.cpt = ( 1 + Mem_cache0.cpt );
+    }
+
+  transition t115  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 15 ) && ( Mem_cache0.state == 7 ) && ( Mem_cache0.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache0.state = 7;
+    Mem_cache0.rsp_cpt = ( Mem_cache0.rsp_cpt - 1 );
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t116  [ ( ( Mem_cache0.state == 7 ) && ( Mem_cache0.cpt == 2 ) ) ] 
+     {     Mem_cache0.state = 9;
+    Mem_cache0.cpt = 0;
+    }
+
+  transition t117  [ ( ( ( Mem_cache0.c_id[Mem_cache0.cpt] == Mem_cache0.src_save ) || ( Mem_cache0.v_c_id[Mem_cache0.cpt] == 0 ) ) && ( Mem_cache0.state == 7 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 7;
+    Mem_cache0.cpt = ( 1 + Mem_cache0.cpt );
+    }
+
+  transition t118  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( Mem_cache0.state == 7 ) ) ] 
+     {     Mem_cache0.state = 16;
+    Mem_cache0.src_save_clnup = chan_L1MCCPACK_id;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t119  [ ( ( Mem_cache0.state == 8 ) && ( Mem_cache0.cpt == 2 ) ) ] 
+     {     Mem_cache0.state = 11;
+    Mem_cache0.cpt = 0;
+    }
+
+  transition t120  [ ( ( chan_MCL1CPREQ_full == 0 ) && ( Mem_cache0.state == 8 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 8;
+    chan_MCL1CPREQ_full = 1;
+    chan_MCL1CPREQ_type = 10;
+    chan_MCL1CPREQ_id = Mem_cache0.cpt;
+    chan_MCL1CPREQ_addr = Mem_cache0.ligne_addr;
+    Mem_cache0.cpt = ( 1 + Mem_cache0.cpt );
+    }
+
+  transition t121  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 8 ) && ( Mem_cache0.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache0.state = 8;
+    Mem_cache0.rsp_cpt = ( Mem_cache0.rsp_cpt - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_id = chan_L1MCCPACK_id;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    chan_L1MCCPACK_addr = 0;
+    }
+
+  transition t122  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 15 ) && ( Mem_cache0.state == 9 ) && ( Mem_cache0.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache0.state = 9;
+    Mem_cache0.rsp_cpt = ( Mem_cache0.rsp_cpt - 1 );
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t123  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( Mem_cache0.state == 9 ) ) ] 
+     {     Mem_cache0.state = 10;
+    Mem_cache0.src_save_clnup = chan_L1MCCPACK_id;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t124  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 9 ) && ( Mem_cache0.rsp_cpt == 0 ) ) ] 
+     {     Mem_cache0.state = 4;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = Mem_cache0.src_save;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    Mem_cache0.src_save = 0;
+    }
+
+  transition t125  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 10 ) && ( Mem_cache0.c_id[Mem_cache0.cpt] == Mem_cache0.src_save_clnup ) && ( Mem_cache0.v_c_id[Mem_cache0.cpt] == 1 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 9;
+    Mem_cache0.v_c_id[Mem_cache0.cpt] = 0;
+    Mem_cache0.c_id[Mem_cache0.cpt] = 0;
+    n_copies_0 = ( n_copies_0 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache0.src_save_clnup;
+    Mem_cache0.cpt = 0;
+    Mem_cache0.src_save_clnup = 0;
+    }
+
+  transition t126  [ ( ( ( Mem_cache0.c_id[Mem_cache0.cpt] != Mem_cache0.src_save_clnup ) || ( Mem_cache0.v_c_id[Mem_cache0.cpt] != 1 ) ) && ( Mem_cache0.state == 10 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 10;
+    Mem_cache0.cpt = ( 1 + Mem_cache0.cpt );
+    }
+
+  transition t127  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache0.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 11 ) && ( Mem_cache0.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache0.state = 11;
+    Mem_cache0.rsp_cpt = ( Mem_cache0.rsp_cpt - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_id = chan_L1MCCPACK_id;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    chan_L1MCCPACK_addr = 0;
+    }
+
+  transition t128  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 11 ) && ( Mem_cache0.rsp_cpt == 0 ) ) ] 
+     {     Mem_cache0.state = 12;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1DTACK_id = Mem_cache0.src_save;
+    Mem_cache0.src_save = 0;
+    }
+
+  transition t129  [ ( ( Mem_cache0.state == 12 ) && ( chan_MCMEMDTREQ_full == 0 ) ) ] 
+     {     Mem_cache0.state = 13;
+    chan_MCMEMDTREQ_full = 1;
+    chan_MCMEMDTREQ_type = 17;
+    chan_MCMEMDTREQ_addr = Mem_cache0.ligne_addr;
+    Mem_cache0.cpt = 0;
+    }
+
+  transition t130  [ ( ( Mem_cache0.state == 13 ) && ( chan_MEMMCDTACK_addr == Mem_cache0.ligne_addr ) && ( chan_MEMMCDTACK_type == 19 ) && ( chan_MEMMCDTACK_full == 1 ) ) ] 
+     {     Mem_cache0.state = 0;
+    chan_MEMMCDTACK_full = 0;
+    chan_MEMMCDTACK_type = 0;
+    chan_MEMMCDTACK_addr = 0;
+    }
+
+  transition t131  [ ( ( Mem_cache0.state == 14 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 14;
+    Mem_cache0.v_c_id[Mem_cache0.cpt] = 0;
+    Mem_cache0.c_id[Mem_cache0.cpt] = 0;
+    Mem_cache0.cpt = ( 1 + Mem_cache0.cpt );
+    }
+
+  transition t132  [ ( ( Mem_cache0.state == 14 ) && ( Mem_cache0.cpt == 2 ) ) ] 
+     {     Mem_cache0.state = 6;
+    Mem_cache0.cpt = 0;
+    }
+
+  transition t133  [ ( ( Mem_cache0.state == 15 ) && ( Mem_cache0.v_c_id[Mem_cache0.cpt] == 1 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 15;
+    Mem_cache0.cpt = ( 1 + Mem_cache0.cpt );
+    }
+
+  transition t134  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache0.state == 15 ) && ( Mem_cache0.v_c_id[Mem_cache0.cpt] == 0 ) && ( Mem_cache0.cpt < 2 ) ) ] 
+     {     Mem_cache0.state = 4;
+    Mem_cache0.c_id[Mem_cache0.cpt] = Mem_cache0.src_save;
+    Mem_cache0.v_c_id[Mem_cache0.cpt] = 1;
+    n_copies_0 = ( 1 + n_copies_0 );
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_id = Mem_cache0.src_save;
+    chan_MCL1DTACK_addr = Mem_cache0.ligne_addr;
+    Mem_cache0.cpt = 0;
+    Mem_cache0.src_save = 0;
+    }
+
+  transition t135  [ ( ( Mem_cache0.state == 15 ) && ( Mem_cache0.cpt == 2 ) ) ] 
+     {     Mem_cache0.state = 4;
+    error = 1;
+    }
+
+  transition t136  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 16 ) && ( Mem_cache0.cpt_clnup == 2 ) ) ] 
+     {     Mem_cache0.state = 7;
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache0.src_save_clnup;
+    Mem_cache0.src_save_clnup = 0;
+    Mem_cache0.cpt_clnup = 0;
+    }
+
+  transition t137  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache0.state == 16 ) && ( Mem_cache0.c_id[Mem_cache0.cpt_clnup] == Mem_cache0.src_save_clnup ) && ( Mem_cache0.v_c_id[Mem_cache0.cpt_clnup] == 1 ) && ( Mem_cache0.cpt_clnup < 2 ) ) ] 
+     {     Mem_cache0.state = 7;
+    Mem_cache0.v_c_id[Mem_cache0.cpt_clnup] = 0;
+    Mem_cache0.c_id[Mem_cache0.cpt_clnup] = 0;
+    n_copies_0 = ( n_copies_0 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache0.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache0.src_save_clnup;
+    Mem_cache0.src_save_clnup = 0;
+    Mem_cache0.cpt_clnup = 0;
+    }
+
+  transition t138  [ ( ( ( Mem_cache0.c_id[Mem_cache0.cpt_clnup] != Mem_cache0.src_save_clnup ) || ( Mem_cache0.v_c_id[Mem_cache0.cpt_clnup] != 1 ) ) && ( Mem_cache0.state == 16 ) && ( Mem_cache0.cpt_clnup < 2 ) ) ] 
+     {     Mem_cache0.state = 16;
+    Mem_cache0.cpt_clnup = ( 1 + Mem_cache0.cpt_clnup );
+    }
+
+  transition t139  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( chan_MCMEMDTREQ_full == 0 ) && ( Mem_cache1.state == 0 ) ) ] 
+     {     Mem_cache1.state = 1;
+    chan_MCMEMDTREQ_full = 1;
+    chan_MCMEMDTREQ_type = 16;
+    Mem_cache1.src_save = chan_L1MCDTREQ_id;
+    chan_MCMEMDTREQ_addr = Mem_cache1.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t140  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( chan_MCMEMDTREQ_full == 0 ) && ( Mem_cache1.state == 0 ) ) ] 
+     {     Mem_cache1.state = 2;
+    chan_MCMEMDTREQ_full = 1;
+    chan_MCMEMDTREQ_type = 16;
+    Mem_cache1.src_save = chan_L1MCDTREQ_id;
+    chan_MCMEMDTREQ_addr = Mem_cache1.ligne_addr;
+    Mem_cache1.dirty = 1;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t141  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 1 ) ) ] 
+     {     Mem_cache1.state = 1;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    Mem_cache1.dirty = 1;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    }
+
+  transition t142  [ ( ( chan_MCL1DTACK_full == 0 ) && ( chan_MEMMCDTACK_addr == Mem_cache1.ligne_addr ) && ( chan_MEMMCDTACK_type == 18 ) && ( chan_MEMMCDTACK_full == 1 ) && ( Mem_cache1.state == 1 ) ) ] 
+     {     Mem_cache1.state = 4;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1DTACK_id = Mem_cache1.src_save;
+    Mem_cache1.c_id[0] = Mem_cache1.src_save;
+    Mem_cache1.v_c_id[0] = 1;
+    n_copies_1 = 1;
+    Mem_cache1.src_save = 0;
+    chan_MEMMCDTACK_full = 0;
+    chan_MEMMCDTACK_type = 0;
+    chan_MEMMCDTACK_addr = 0;
+    }
+
+  transition t143  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 2 ) ) ] 
+     {     Mem_cache1.state = 3;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = Mem_cache1.src_save;
+    Mem_cache1.src_save = 0;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    }
+
+  transition t144  [ ( ( chan_MEMMCDTACK_addr == Mem_cache1.ligne_addr ) && ( chan_MEMMCDTACK_type == 18 ) && ( chan_MEMMCDTACK_full == 1 ) && ( Mem_cache1.state == 3 ) ) ] 
+     {     Mem_cache1.state = 4;
+    chan_MEMMCDTACK_full = 0;
+    chan_MEMMCDTACK_type = 0;
+    chan_MEMMCDTACK_addr = 0;
+    n_copies_1 = 0;
+    }
+
+  transition t145  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( Mem_cache1.state == 4 ) && ( n_copies_1 < 2 ) ) ] 
+     {     Mem_cache1.state = 15;
+    Mem_cache1.src_save = chan_L1MCDTREQ_id;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    }
+
+  transition t146  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 4 ) && ( n_copies_1 >= 2 ) ) ] 
+     {     Mem_cache1.state = 14;
+    n_copies_1 = ( 1 + n_copies_1 );
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t147  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( Mem_cache1.state == 4 ) && ( n_copies_1 > 0 ) ) ] 
+     {     Mem_cache1.state = 7;
+    Mem_cache1.dirty = 1;
+    Mem_cache1.src_save = chan_L1MCDTREQ_id;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t148  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 4 ) && ( n_copies_1 == 0 ) ) ] 
+     {     Mem_cache1.state = 4;
+    Mem_cache1.dirty = 1;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t149  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( Mem_cache1.state == 4 ) ) ] 
+     {     Mem_cache1.state = 5;
+    Mem_cache1.src_save = chan_L1MCCPACK_id;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t150  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 5 ) && ( Mem_cache1.cpt == 2 ) ) ] 
+     {     Mem_cache1.state = 4;
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache1.src_save;
+    Mem_cache1.src_save = 0;
+    Mem_cache1.cpt = 0;
+    error = 1;
+    }
+
+  transition t151  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 5 ) && ( Mem_cache1.c_id[Mem_cache1.cpt] == Mem_cache1.src_save ) && ( Mem_cache1.v_c_id[Mem_cache1.cpt] == 1 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 4;
+    Mem_cache1.v_c_id[Mem_cache1.cpt] = 0;
+    Mem_cache1.c_id[Mem_cache1.cpt] = 0;
+    n_copies_1 = ( n_copies_1 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache1.src_save;
+    Mem_cache1.src_save = 0;
+    Mem_cache1.cpt = 0;
+    }
+
+  transition t152  [ ( ( ( Mem_cache1.c_id[Mem_cache1.cpt] != Mem_cache1.src_save ) || ( Mem_cache1.v_c_id[Mem_cache1.cpt] != 1 ) ) && ( Mem_cache1.state == 5 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 5;
+    Mem_cache1.cpt = ( 1 + Mem_cache1.cpt );
+    }
+
+  transition t153  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 4 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 6 ) ) ] 
+     {     Mem_cache1.state = 6;
+    n_copies_1 = ( 1 + n_copies_1 );
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    }
+
+  transition t154  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 6 ) && ( n_copies_1 == 0 ) ) ] 
+     {     Mem_cache1.state = 6;
+    Mem_cache1.dirty = 1;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = chan_L1MCDTREQ_id;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_id = 0;
+    chan_L1MCDTREQ_addr = 0;
+    }
+
+  transition t155  [ ( ( chan_L1MCDTREQ_full == 1 ) && ( chan_L1MCDTREQ_type == 5 ) && ( chan_L1MCDTREQ_addr == Mem_cache1.ligne_addr ) && ( Mem_cache1.state == 6 ) && ( n_copies_1 > 0 ) ) ] 
+     {     Mem_cache1.state = 8;
+    Mem_cache1.dirty = 1;
+    Mem_cache1.src_save = chan_L1MCDTREQ_id;
+    Mem_cache1.rsp_cpt = n_copies_1;
+    chan_L1MCDTREQ_full = 0;
+    chan_L1MCDTREQ_type = 0;
+    chan_L1MCDTREQ_addr = 0;
+    chan_L1MCDTREQ_id = 0;
+    n_copies_1 = 0;
+    }
+
+  transition t156  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 6 ) ) ] 
+     {     Mem_cache1.state = 6;
+    n_copies_1 = ( n_copies_1 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_id = chan_L1MCCPACK_id;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    chan_L1MCCPACK_addr = 0;
+    }
+
+  transition t157  [ ( ( chan_MCL1CPREQ_full == 0 ) && ( Mem_cache1.state == 7 ) && ( Mem_cache1.v_c_id[Mem_cache1.cpt] == 1 ) && ( Mem_cache1.c_id[Mem_cache1.cpt] != Mem_cache1.src_save ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 7;
+    Mem_cache1.rsp_cpt = ( 1 + Mem_cache1.rsp_cpt );
+    chan_MCL1CPREQ_full = 1;
+    chan_MCL1CPREQ_type = 12;
+    chan_MCL1CPREQ_addr = Mem_cache1.ligne_addr;
+    chan_MCL1CPREQ_id = Mem_cache1.c_id[Mem_cache1.cpt];
+    Mem_cache1.cpt = ( 1 + Mem_cache1.cpt );
+    }
+
+  transition t158  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 15 ) && ( Mem_cache1.state == 7 ) && ( Mem_cache1.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache1.state = 7;
+    Mem_cache1.rsp_cpt = ( Mem_cache1.rsp_cpt - 1 );
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t159  [ ( ( Mem_cache1.state == 7 ) && ( Mem_cache1.cpt == 2 ) ) ] 
+     {     Mem_cache1.state = 9;
+    Mem_cache1.cpt = 0;
+    }
+
+  transition t160  [ ( ( ( Mem_cache1.c_id[Mem_cache1.cpt] == Mem_cache1.src_save ) || ( Mem_cache1.v_c_id[Mem_cache1.cpt] == 0 ) ) && ( Mem_cache1.state == 7 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 7;
+    Mem_cache1.cpt = ( 1 + Mem_cache1.cpt );
+    }
+
+  transition t161  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( Mem_cache1.state == 7 ) ) ] 
+     {     Mem_cache1.state = 16;
+    Mem_cache1.src_save_clnup = chan_L1MCCPACK_id;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t162  [ ( ( Mem_cache1.state == 8 ) && ( Mem_cache1.cpt == 2 ) ) ] 
+     {     Mem_cache1.state = 11;
+    Mem_cache1.cpt = 0;
+    }
+
+  transition t163  [ ( ( chan_MCL1CPREQ_full == 0 ) && ( Mem_cache1.state == 8 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 8;
+    chan_MCL1CPREQ_full = 1;
+    chan_MCL1CPREQ_type = 10;
+    chan_MCL1CPREQ_id = Mem_cache1.cpt;
+    chan_MCL1CPREQ_addr = Mem_cache1.ligne_addr;
+    Mem_cache1.cpt = ( 1 + Mem_cache1.cpt );
+    }
+
+  transition t164  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 8 ) && ( Mem_cache1.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache1.state = 8;
+    Mem_cache1.rsp_cpt = ( Mem_cache1.rsp_cpt - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_id = chan_L1MCCPACK_id;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    chan_L1MCCPACK_addr = 0;
+    }
+
+  transition t165  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 15 ) && ( Mem_cache1.state == 9 ) && ( Mem_cache1.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache1.state = 9;
+    Mem_cache1.rsp_cpt = ( Mem_cache1.rsp_cpt - 1 );
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t166  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( Mem_cache1.state == 9 ) ) ] 
+     {     Mem_cache1.state = 10;
+    Mem_cache1.src_save_clnup = chan_L1MCCPACK_id;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_addr = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    }
+
+  transition t167  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 9 ) && ( Mem_cache1.rsp_cpt == 0 ) ) ] 
+     {     Mem_cache1.state = 4;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_id = Mem_cache1.src_save;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    Mem_cache1.src_save = 0;
+    }
+
+  transition t168  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 10 ) && ( Mem_cache1.c_id[Mem_cache1.cpt] == Mem_cache1.src_save_clnup ) && ( Mem_cache1.v_c_id[Mem_cache1.cpt] == 1 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 9;
+    Mem_cache1.v_c_id[Mem_cache1.cpt] = 0;
+    Mem_cache1.c_id[Mem_cache1.cpt] = 0;
+    n_copies_1 = ( n_copies_1 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache1.src_save_clnup;
+    Mem_cache1.cpt = 0;
+    Mem_cache1.src_save_clnup = 0;
+    }
+
+  transition t169  [ ( ( ( Mem_cache1.c_id[Mem_cache1.cpt] != Mem_cache1.src_save_clnup ) || ( Mem_cache1.v_c_id[Mem_cache1.cpt] != 1 ) ) && ( Mem_cache1.state == 10 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 10;
+    Mem_cache1.cpt = ( 1 + Mem_cache1.cpt );
+    }
+
+  transition t170  [ ( ( chan_L1MCCPACK_full == 1 ) && ( chan_L1MCCPACK_addr == Mem_cache1.ligne_addr ) && ( chan_L1MCCPACK_type == 8 ) && ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 11 ) && ( Mem_cache1.rsp_cpt > 0 ) ) ] 
+     {     Mem_cache1.state = 11;
+    Mem_cache1.rsp_cpt = ( Mem_cache1.rsp_cpt - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_id = chan_L1MCCPACK_id;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_L1MCCPACK_full = 0;
+    chan_L1MCCPACK_type = 0;
+    chan_L1MCCPACK_id = 0;
+    chan_L1MCCPACK_addr = 0;
+    }
+
+  transition t171  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 11 ) && ( Mem_cache1.rsp_cpt == 0 ) ) ] 
+     {     Mem_cache1.state = 12;
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 7;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1DTACK_id = Mem_cache1.src_save;
+    Mem_cache1.src_save = 0;
+    }
+
+  transition t172  [ ( ( chan_MCMEMDTREQ_full == 0 ) && ( Mem_cache1.state == 12 ) ) ] 
+     {     Mem_cache1.state = 13;
+    chan_MCMEMDTREQ_full = 1;
+    chan_MCMEMDTREQ_type = 17;
+    chan_MCMEMDTREQ_addr = Mem_cache1.ligne_addr;
+    Mem_cache1.cpt = 0;
+    }
+
+  transition t173  [ ( ( chan_MEMMCDTACK_addr == Mem_cache1.ligne_addr ) && ( chan_MEMMCDTACK_type == 19 ) && ( chan_MEMMCDTACK_full == 1 ) && ( Mem_cache1.state == 13 ) ) ] 
+     {     Mem_cache1.state = 0;
+    chan_MEMMCDTACK_full = 0;
+    chan_MEMMCDTACK_type = 0;
+    chan_MEMMCDTACK_addr = 0;
+    }
+
+  transition t174  [ ( ( Mem_cache1.state == 14 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 14;
+    Mem_cache1.v_c_id[Mem_cache1.cpt] = 0;
+    Mem_cache1.c_id[Mem_cache1.cpt] = 0;
+    Mem_cache1.cpt = ( 1 + Mem_cache1.cpt );
+    }
+
+  transition t175  [ ( ( Mem_cache1.state == 14 ) && ( Mem_cache1.cpt == 2 ) ) ] 
+     {     Mem_cache1.state = 6;
+    Mem_cache1.cpt = 0;
+    }
+
+  transition t176  [ ( ( Mem_cache1.state == 15 ) && ( Mem_cache1.v_c_id[Mem_cache1.cpt] == 1 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 15;
+    Mem_cache1.cpt = ( 1 + Mem_cache1.cpt );
+    }
+
+  transition t177  [ ( ( chan_MCL1DTACK_full == 0 ) && ( Mem_cache1.state == 15 ) && ( Mem_cache1.v_c_id[Mem_cache1.cpt] == 0 ) && ( Mem_cache1.cpt < 2 ) ) ] 
+     {     Mem_cache1.state = 4;
+    Mem_cache1.c_id[Mem_cache1.cpt] = Mem_cache1.src_save;
+    Mem_cache1.v_c_id[Mem_cache1.cpt] = 1;
+    n_copies_1 = ( 1 + n_copies_1 );
+    chan_MCL1DTACK_full = 1;
+    chan_MCL1DTACK_type = 6;
+    chan_MCL1DTACK_id = Mem_cache1.src_save;
+    chan_MCL1DTACK_addr = Mem_cache1.ligne_addr;
+    Mem_cache1.cpt = 0;
+    Mem_cache1.src_save = 0;
+    }
+
+  transition t178  [ ( ( Mem_cache1.state == 15 ) && ( Mem_cache1.cpt == 2 ) ) ] 
+     {     Mem_cache1.state = 4;
+    error = 1;
+    }
+
+  transition t179  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 16 ) && ( Mem_cache1.cpt_clnup == 2 ) ) ] 
+     {     Mem_cache1.state = 7;
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache1.src_save_clnup;
+    Mem_cache1.src_save_clnup = 0;
+    Mem_cache1.cpt_clnup = 0;
+    }
+
+  transition t180  [ ( ( chan_MCL1CLACK_full == 0 ) && ( Mem_cache1.state == 16 ) && ( Mem_cache1.c_id[Mem_cache1.cpt_clnup] == Mem_cache1.src_save_clnup ) && ( Mem_cache1.v_c_id[Mem_cache1.cpt_clnup] == 1 ) && ( Mem_cache1.cpt_clnup < 2 ) ) ] 
+     {     Mem_cache1.state = 7;
+    Mem_cache1.v_c_id[Mem_cache1.cpt_clnup] = 0;
+    Mem_cache1.c_id[Mem_cache1.cpt_clnup] = 0;
+    n_copies_1 = ( n_copies_1 - 1 );
+    chan_MCL1CLACK_full = 1;
+    chan_MCL1CLACK_type = 9;
+    chan_MCL1CLACK_addr = Mem_cache1.ligne_addr;
+    chan_MCL1CLACK_id = Mem_cache1.src_save_clnup;
+    Mem_cache1.src_save_clnup = 0;
+    Mem_cache1.cpt_clnup = 0;
+    }
+
+  transition t181  [ ( ( ( Mem_cache1.c_id[Mem_cache1.cpt_clnup] != Mem_cache1.src_save_clnup ) || ( Mem_cache1.v_c_id[Mem_cache1.cpt_clnup] != 1 ) ) && ( Mem_cache1.state == 16 ) && ( Mem_cache1.cpt_clnup < 2 ) ) ] 
+     {     Mem_cache1.state = 16;
+    Mem_cache1.cpt_clnup = ( 1 + Mem_cache1.cpt_clnup );
+    }
+
+  transition t182  [ ( ( chan_MCMEMDTREQ_full == 1 ) && ( chan_MCMEMDTREQ_type == 16 ) && ( chan_MEMMCDTACK_full == 0 ) ) ] 
+     {     chan_MEMMCDTACK_full = 1;
+    chan_MEMMCDTACK_type = 18;
+    chan_MEMMCDTACK_addr = chan_MCMEMDTREQ_addr;
+    chan_MCMEMDTREQ_full = 0;
+    chan_MCMEMDTREQ_type = 0;
+    chan_MCMEMDTREQ_addr = 0;
+    }
+
+  transition t183  [ ( ( chan_MCMEMDTREQ_full == 1 ) && ( chan_MCMEMDTREQ_type == 17 ) && ( chan_MEMMCDTACK_full == 0 ) ) ] 
+     {     chan_MEMMCDTACK_full = 1;
+    chan_MEMMCDTACK_type = 19;
+    chan_MEMMCDTACK_addr = chan_MCMEMDTREQ_addr;
+    chan_MCMEMDTREQ_full = 0;
+    chan_MCMEMDTREQ_type = 0;
+    chan_MCMEMDTREQ_addr = 0;
+    }
+
+  // transient predicate 
+TRANSIENT = false;
+
+}
+

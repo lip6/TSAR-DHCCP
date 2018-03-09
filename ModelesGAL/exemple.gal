@@ -1,0 +1,45 @@
+gal exemple {
+	int glob_chan_P1P2_full = 0 ;
+	int glob_chan_P2P1_full = 0 ;
+	int glob_global_var = 0 ;
+	int P1_state = 0 ;
+	int P2_state = 0 ;
+	int P2_local_var = 0 ;
+	/**P1(t0) : x1->x2*/
+	transition P1_t1_x1_x2 [glob_chan_P1P2_full == 0 && P1_state == 0] {
+		P1_state = 1 ;
+		glob_chan_P1P2_full = 1 ;
+	}
+	/**P1(t1) : x1->x2*/
+	transition P1_t2_x1_x2 [glob_chan_P1P2_full == 0 && P1_state == 0] {
+		P1_state = 1 ;
+	}
+	/**P1(t2) : x2->x1*/
+	transition P1_t3_x2_x1 [glob_chan_P2P1_full == 1 && P1_state == 1] {
+		P1_state = 0 ;
+		glob_chan_P2P1_full = 0 ;
+		glob_global_var = 1 ;
+	}
+	/**P2(t0) : y1->y2*/
+	transition P2_t1_y1_y2 [glob_chan_P1P2_full == 1 && P2_state == 0] {
+		P2_state = 1 ;
+		glob_chan_P1P2_full = 0 ;
+	}
+	/**P2(t1) : y2->y1*/
+	transition P2_t2_y2_y1 [glob_chan_P2P1_full == 0 && P2_state == 1] {
+		P2_state = 0 ;
+		glob_chan_P2P1_full = 1 ;
+	}
+	/**P2(t2) : y1->y3*/
+	transition P2_t3_y1_y3 [P2_state == 0] {
+		P2_state = 2 ;
+		P2_local_var = 1 ;
+	}
+	/**P2(t3) : y3->y1*/
+	transition P2_t4_y3_y1 [glob_global_var == 1 && P2_state == 2] {
+		P2_state = 0 ;
+		P2_local_var = 0 ;
+	}
+}
+
+property p1 [reachable] : glob_global_var == 1 && P2_state == 2  ;

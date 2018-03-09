@@ -1,0 +1,690 @@
+byte chan_PL1DTREQ_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_PL1DTREQ_addr = 0;
+byte chan_PL1DTREQ_type = 0;
+
+byte chan_L1PDTACK_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_L1PDTACK_addr = 0;
+byte chan_L1PDTACK_type = 0;
+
+byte chan_L1MCDTREQ_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_L1MCDTREQ_id = 0;
+byte chan_L1MCDTREQ_addr = 0;
+byte chan_L1MCDTREQ_type = 0;
+
+byte chan_MCL1DTACK_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_MCL1DTACK_id = 0;
+byte chan_MCL1DTACK_addr = 0;
+byte chan_MCL1DTACK_type = 0;
+
+byte chan_L1MCCUREQ_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_L1MCCUREQ_id = 0;
+byte chan_L1MCCUREQ_addr = 0;
+byte chan_L1MCCUREQ_type = 0;
+
+byte chan_MCL1CUACK_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_MCL1CUACK_id = 0;
+byte chan_MCL1CUACK_addr = 0;
+byte chan_MCL1CUACK_type = 0;
+
+byte chan_MCL1CPREQ_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_MCL1CPREQ_id = 0;
+byte chan_MCL1CPREQ_addr = 0;
+byte chan_MCL1CPREQ_type = 0;
+
+byte chan_L1MCCPACK_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_L1MCCPACK_id = 0;
+byte chan_L1MCCPACK_addr = 0;
+byte chan_L1MCCPACK_type = 0;
+
+byte chan_MCMEMDTREQ_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_MCMEMDTREQ_addr = 0;
+byte chan_MCMEMDTREQ_type = 0;
+
+byte chan_MEMMCDTACK_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_MEMMCDTACK_addr = 0;
+byte chan_MEMMCDTACK_type = 0;
+
+byte NB_CACHES = 1;
+byte cl1_addr_save = 5;
+byte addr_cache = 7;
+byte v_cache_valide = 0;
+byte n_cache0 = 0;
+byte n_cache1 = 0;
+ 
+process Processeur {
+    byte addr;   
+    state ready, wait_rd, wait_wr; 
+    init ready;
+    
+    trans    
+    
+    ready -> wait_rd {
+        guard (chan_PL1DTREQ_full == 0);
+        effect chan_PL1DTREQ_full = 1, chan_PL1DTREQ_addr = 0, chan_PL1DTREQ_type = 0, addr = 0; // DT_RD adresse 0
+    },
+
+    ready -> wait_wr {
+        guard (chan_PL1DTREQ_full == 0);
+        effect chan_PL1DTREQ_full = 1, chan_PL1DTREQ_addr = 0, chan_PL1DTREQ_type = 1, addr = 0; // DT_WR adresse 0
+    },
+    
+    ready -> wait_rd {
+        guard (chan_PL1DTREQ_full == 0);
+        effect chan_PL1DTREQ_full = 1, chan_PL1DTREQ_addr = 1, chan_PL1DTREQ_type = 0, addr = 1; // DT_RD adresse 1
+    },
+
+    ready -> wait_wr {
+        guard (chan_PL1DTREQ_full == 0);
+        effect chan_PL1DTREQ_full = 1, chan_PL1DTREQ_addr = 1, chan_PL1DTREQ_type = 1, addr = 1; // DT_WR adresse 1
+    },
+    
+    wait_rd -> ready {
+        guard (chan_L1PDTACK_full == 1 && chan_L1PDTACK_type == 2 && addr == chan_L1PDTACK_addr); // ACK_DT_RD 
+        effect chan_L1PDTACK_full = 0, chan_L1PDTACK_addr = 0, chan_L1PDTACK_type = 0, addr = 0, chan_PL1DTREQ_full = 0, chan_PL1DTREQ_type = 0, chan_PL1DTREQ_addr = 0;       
+    },
+    
+    wait_wr -> ready {
+        guard (chan_L1PDTACK_full == 1 && chan_L1PDTACK_type == 3 && addr == chan_L1PDTACK_addr); // ACK_DT_WR  
+        effect chan_L1PDTACK_full = 0, chan_L1PDTACK_addr = 0, chan_L1PDTACK_type = 0, addr = 0, chan_PL1DTREQ_full = 0, chan_PL1DTREQ_type = 0, chan_PL1DTREQ_addr = 0; 
+    };
+    
+}
+  
+    
+process CacheL1 {
+    //byte v_cache_valide = 0; // bit de validité, le cache modifie cette valeur : 0 -> invalide, 1 -> valide
+	byte v_addr = 0; // le cache contient la ligne X (0) ou Y (1)
+	byte vcl = 1;			// variable d'état de cleanup : 1 <=> on peut envoyer un cleanup ; 0 : on doit attendre la réponse à un cleanup avant d'en renvoyer un
+	byte addr_save = 0; // Sauvegarde l'adresse de la requete. 0 : X ; 1 : Y
+	byte ignore_miss_rsp = 0;
+    byte id = 0;
+       
+    state empty, miss, miss_wait, valid_data, write_wait_valid, write_wait_empty, data_wait, miss_clnup;  
+    init empty;
+
+    assert empty : v_addr == 0,
+	       empty : addr_save == 0,
+	       empty : ignore_miss_rsp == 0,
+	       empty : id < NB_CACHES,
+	       write_wait_empty : ignore_miss_rsp == 0,
+	       
+	       miss : ((v_cache_valide != 1) || (v_addr != addr_save)),
+	       miss : ignore_miss_rsp == 0,
+	       
+	       //valid_data : addr_save == 0,
+	       valid_data : ignore_miss_rsp == 0;
+	       
+	       //write_ack : addr == addr_save,
+	       //miss_wait_coherence : v_cache_valide == 0, 
+	       //read_ack : addr == addr_save,
+	       //write_valid : addr == addr_save;
+	
+    trans
+    
+    empty -> empty {        
+        guard (chan_MCL1CPREQ_full == 1 && (chan_MCL1CPREQ_type == 11 || chan_MCL1CPREQ_type == 10 || chan_MCL1CPREQ_type == 12)  && chan_MCL1CPREQ_id == id); // M_INV || B_INV || M_UP
+        effect chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0;
+    },
+    
+    empty -> miss {        
+        guard (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 0); // DT_RD 
+        effect addr_save = chan_PL1DTREQ_addr, cl1_addr_save = addr_save, chan_PL1DTREQ_full = 0, chan_PL1DTREQ_type = 0, chan_PL1DTREQ_addr = 0;        
+    },
+    
+    empty -> write_wait_empty {        
+        guard (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 1 && chan_L1MCDTREQ_full == 0); // DT_WR
+        effect addr_save = chan_PL1DTREQ_addr, cl1_addr_save = addr_save, chan_L1MCDTREQ_full = 1, chan_L1MCDTREQ_id = id, chan_L1MCDTREQ_addr = chan_PL1DTREQ_addr, chan_L1MCDTREQ_type = 5, chan_PL1DTREQ_full = 0, chan_PL1DTREQ_addr = 0, chan_PL1DTREQ_type = 0; // WR
+    },
+    
+    empty -> empty {        
+        guard (chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9 && chan_MCL1CUACK_id == id); // ACK_CLNUP
+        effect vcl = 1, chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0, chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0;
+    },
+    
+    write_wait_empty -> write_wait_empty {        
+        guard (chan_MCL1CPREQ_full == 1 && (chan_MCL1CPREQ_type == 11 || chan_MCL1CPREQ_type == 10) && chan_MCL1CPREQ_id == id); // M_INV || // B_INV
+        effect chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0;
+    },
+    
+    write_wait_empty -> empty {
+        guard (chan_MCL1DTACK_full == 1 && chan_MCL1DTACK_type == 7 && chan_MCL1DTACK_id == id && addr_save == chan_MCL1DTACK_addr &&  chan_L1PDTACK_full == 0); // ACK_WR
+        effect chan_L1PDTACK_full = 1, chan_L1PDTACK_addr = addr_save, chan_L1PDTACK_type = 3, addr_save = 0, cl1_addr_save = 0, chan_MCL1DTACK_full = 0, chan_MCL1DTACK_id = 0, chan_MCL1DTACK_addr = 0, chan_MCL1DTACK_type = 0; // ACK_DT_WR
+    },
+    
+    write_wait_empty -> write_wait_empty {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_id == id && chan_L1MCCPACK_full == 0); // M_UP
+        effect chan_L1MCCPACK_full = 1, chan_L1MCCPACK_id = id, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_L1MCCPACK_type = 15, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0;  // ACK_M_UP
+    },
+    
+    write_wait_empty -> write_wait_empty {
+        guard (chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9 && chan_MCL1CUACK_id == id); // ACK_CLNUP
+        effect vcl = 1, chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0,  chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0 ;
+    },
+    
+    miss -> miss_clnup {
+        guard (addr_save != v_addr && v_cache_valide == 1 && vcl == 1 && chan_L1MCCUREQ_full == 0); // Pas de ACK_CLNUP attendu
+        effect vcl = 0, chan_L1MCCUREQ_full = 1, chan_L1MCCUREQ_type = 8, chan_L1MCCUREQ_id = id, chan_L1MCCUREQ_addr = v_addr, v_cache_valide = 0, v_addr = 0, addr_cache = v_addr; // CLNUP        
+    },
+    
+    miss -> miss_clnup {
+        guard (addr_save != v_addr && v_cache_valide == 1 && vcl == 0 && chan_L1MCCUREQ_full == 0 && chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9); // ACK_CLNUP attendu => bloquage
+        effect chan_L1MCCUREQ_full = 1, chan_L1MCCUREQ_type = 8, chan_L1MCCUREQ_id = id, chan_L1MCCUREQ_addr = v_addr, v_cache_valide = 0, v_addr = 0, addr_cache = v_addr, chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0, chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0; // Envoi du CLNUP après réception du ACK_CLNUP attendu       
+    },
+    
+    miss_clnup -> miss_wait {
+        guard (chan_L1MCDTREQ_full == 0);
+        effect chan_L1MCDTREQ_full = 1, chan_L1MCDTREQ_type = 4, chan_L1MCDTREQ_id = id, chan_L1MCDTREQ_addr = addr_save; // RD        
+    },
+    
+    miss -> miss_wait {
+        guard (v_cache_valide == 0 && chan_L1MCDTREQ_full == 0);
+        effect chan_L1MCDTREQ_full = 1, chan_L1MCDTREQ_type = 4, chan_L1MCDTREQ_id = id, chan_L1MCDTREQ_addr = addr_save; // RD        
+    },
+    
+    miss -> miss {
+        guard (chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9 && chan_MCL1CUACK_id == id ); // ACK_CLNUP
+        effect vcl = 1, chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0,  chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0 ;
+    },
+    
+    miss_wait ->  miss_wait {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 11 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == addr_save && chan_L1MCCPACK_full == 0); // Le M_INV a doublé la réponse
+        effect chan_L1MCCPACK_full = 1, ignore_miss_rsp = 1, chan_L1MCCPACK_type = 14, chan_L1MCCPACK_id = id, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0; // ACK_M_INV
+    },
+    
+    miss_wait ->  miss_wait {
+        guard (chan_MCL1CPREQ_full == 1 && (chan_MCL1CPREQ_type == 11 || chan_MCL1CPREQ_type == 10 || chan_MCL1CPREQ_type == 12) && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr != addr_save && v_cache_valide == 0); // Le controleur mémoire a envoyé le M_INV || B_INV || M_UP car il n'a pas encore reçu le CLNUP de l'ancienne ligne
+        effect chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0;
+    },
+    
+    miss_wait ->  miss_wait {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 10 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == addr_save && chan_L1MCCPACK_full == 0); // Le B_INV a doublé la réponse
+        effect chan_L1MCCPACK_full = 1, ignore_miss_rsp = 1, chan_L1MCCPACK_type = 13, chan_L1MCCPACK_id = id, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0; // ACK_B_INV
+    },
+    
+    miss_wait ->  miss_wait {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == addr_save && vcl == 1 && chan_L1MCCUREQ_full ==0 ); // M_UP : on envoie un clnup si on est pas en attente d'un ACK_CLNUP 
+        effect chan_L1MCCUREQ_full = 1, ignore_miss_rsp = 1, vcl = 0, chan_L1MCCUREQ_type = 8, chan_L1MCCUREQ_id = id, chan_L1MCCUREQ_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0;  // CLNUP
+    },
+    
+    miss_wait ->  miss_wait {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == addr_save && vcl == 0 && chan_L1MCCUREQ_full == 0 && chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9 && chan_MCL1CUACK_id == id); // M_UP : ACK_CLNUP attendu
+        effect chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0, chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0, chan_L1MCCUREQ_full = 1, ignore_miss_rsp = 1, vcl = 0, chan_L1MCCUREQ_type = 8, chan_L1MCCUREQ_id = id, chan_L1MCCUREQ_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0;  // CLNUP
+    },
+    
+    miss_wait ->  miss_wait {
+        guard (chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9 && chan_MCL1CUACK_id == id ); // ACK_CLNUP
+        effect vcl = 1, chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0,  chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0 ;
+    },
+    
+    miss_wait -> miss {
+        guard (chan_MCL1DTACK_full == 1 && chan_MCL1DTACK_type == 6 && chan_MCL1DTACK_id == id && chan_MCL1DTACK_addr == addr_save && ignore_miss_rsp == 1); // ACK_RD; dans ce cas on ignore le ACK_RD
+        effect ignore_miss_rsp = 0, chan_MCL1DTACK_full = 0, chan_MCL1DTACK_type = 0,  chan_MCL1DTACK_id = 0, chan_MCL1DTACK_addr = 0 ;
+    },
+    
+    miss_wait -> valid_data {
+        guard (chan_MCL1DTACK_full == 1 && chan_MCL1DTACK_type == 6 && chan_MCL1DTACK_id == id && chan_MCL1DTACK_addr == addr_save && ignore_miss_rsp == 0 && chan_L1PDTACK_full == 0); // ACK_RD
+        effect v_cache_valide = 1, v_addr = addr_save, addr_cache = v_addr,  chan_L1PDTACK_full = 1, chan_L1PDTACK_type = 2, chan_L1PDTACK_addr = addr_save, addr_save = 0, cl1_addr_save = 0, chan_MCL1DTACK_full = 0, chan_MCL1DTACK_type = 0, chan_MCL1DTACK_id = 0, chan_MCL1DTACK_addr = 0; // ACK_DT_RD
+    },
+    
+    valid_data -> empty {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 11 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == v_addr && chan_L1MCCPACK_full == 0 ); // M_INV
+        effect v_addr = 0, addr_cache = v_addr, chan_L1MCCPACK_full = 1, chan_L1MCCPACK_type = 14, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_L1MCCPACK_id = id, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0, v_cache_valide = 0, addr_save = 0, cl1_addr_save = 0; // ACK_M_INV
+    },
+     
+    valid_data -> valid_data {
+        guard (chan_MCL1CPREQ_full == 1 && (chan_MCL1CPREQ_type == 11 || chan_MCL1CPREQ_type == 10 || chan_MCL1CPREQ_type == 12 ) && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr != v_addr); // M_INV || B_INV || M_UP
+        effect chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0; // on ne répond pas car on a envoyé un CLNUP 
+    },
+    
+    valid_data -> empty {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 10 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == v_addr && chan_L1MCCPACK_full == 0 ); // B_INV
+        effect v_addr = 0, addr_cache = v_addr, chan_L1MCCPACK_full = 1, chan_L1MCCPACK_type = 13, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_L1MCCPACK_id = id, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0, v_cache_valide = 0, addr_save = 0, cl1_addr_save = 0; // ACK_B_INV
+    },
+     
+    valid_data -> valid_data {
+        guard (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 0 && chan_PL1DTREQ_addr == v_addr && chan_L1PDTACK_full == 0); // DT_RD
+        effect chan_L1PDTACK_full = 1, chan_L1PDTACK_type = 2, chan_L1PDTACK_addr = chan_PL1DTREQ_addr, chan_PL1DTREQ_full = 0, chan_PL1DTREQ_addr = 0, chan_PL1DTREQ_type = 0; // ACK_DT_RD
+    },
+    
+    valid_data -> miss {
+        guard (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 0 && chan_PL1DTREQ_addr != v_addr); // DT_RD
+        effect addr_save = chan_PL1DTREQ_addr, cl1_addr_save = addr_save, chan_PL1DTREQ_full = 0, chan_PL1DTREQ_addr = 0, chan_PL1DTREQ_type = 0;
+    },
+            
+    valid_data -> write_wait_valid {
+        guard (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_type == 1 && chan_L1MCDTREQ_full == 0); // DT_WR
+        effect addr_save = chan_PL1DTREQ_addr, cl1_addr_save = addr_save, chan_L1MCDTREQ_full = 1, chan_L1MCDTREQ_type = 5, chan_L1MCDTREQ_id = id, chan_L1MCDTREQ_addr = chan_PL1DTREQ_addr, chan_PL1DTREQ_full = 0, chan_PL1DTREQ_addr = 0, chan_PL1DTREQ_type = 0; // WR
+    },
+    
+    valid_data -> valid_data {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == v_addr && chan_L1MCCPACK_full == 0); // M_UP
+        effect chan_L1MCCPACK_full = 1, chan_L1MCCPACK_type = 15, chan_L1MCCPACK_id = id, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0; // ACK_M_UP
+    },
+    
+    valid_data -> valid_data {
+        guard (chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9 && chan_MCL1CUACK_id == id); // ACK_CLNUP
+        effect vcl = 1, chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0,  chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0;
+    },
+        
+    write_wait_valid -> write_wait_empty {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 11 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == v_addr && chan_L1MCCPACK_full == 0); // M_INV
+        effect v_addr = 0, addr_cache = v_addr, chan_L1MCCPACK_full = 1, chan_L1MCCPACK_type = 14,  chan_L1MCCPACK_id = id, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0, v_cache_valide = 0, addr_save = 0, cl1_addr_save = 0; // ACK_M_INV
+    },
+    
+    write_wait_valid -> write_wait_valid {
+        guard (chan_MCL1CPREQ_full == 1 && (chan_MCL1CPREQ_type == 11 || chan_MCL1CPREQ_type == 10 || chan_MCL1CPREQ_type == 12) && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr != v_addr); // M_INV || B_INV || M_UP sur une autre adresse
+        effect chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0;
+    },
+      
+    write_wait_valid -> write_wait_empty {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 10 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == v_addr && chan_L1MCCPACK_full == 0); // B_INV
+        effect v_addr = 0, addr_cache = v_addr, chan_L1MCCPACK_full = 1, chan_L1MCCPACK_type = 13,  chan_L1MCCPACK_id = id, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0, v_cache_valide = 0, addr_save = 0, cl1_addr_save = 0; // ACK_B_INV
+    },  
+    
+    write_wait_valid -> valid_data {
+        guard (chan_MCL1DTACK_full == 1 && chan_MCL1DTACK_type == 7 && chan_MCL1DTACK_id == id && chan_MCL1DTACK_addr == addr_save && chan_L1PDTACK_full == 0); // ACK_WR
+        effect chan_L1PDTACK_full = 1, chan_L1PDTACK_addr = chan_MCL1DTACK_addr, chan_L1PDTACK_type = 3, chan_MCL1DTACK_full = 0, chan_MCL1DTACK_type = 0, chan_MCL1DTACK_id = 0, chan_MCL1DTACK_addr = 0, addr_save = 0, cl1_addr_save = 0; // ACK_DT_WR
+    },
+    
+    write_wait_valid -> write_wait_valid {
+        guard (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_id == id && chan_MCL1CPREQ_addr == v_addr && chan_L1MCCPACK_full == 0); // M_UP
+        effect chan_L1MCCPACK_full = 1, chan_L1MCCPACK_type = 15, chan_L1MCCPACK_id = id, chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr, chan_MCL1CPREQ_full = 0, chan_MCL1CPREQ_type = 0, chan_MCL1CPREQ_id = 0, chan_MCL1CPREQ_addr = 0; // ACK_M_UP
+    },
+    
+    write_wait_valid -> write_wait_valid {
+        guard (chan_MCL1CUACK_full == 1 && chan_MCL1CUACK_type == 9 && chan_MCL1CUACK_id == id); // ACK_CLNUP
+        effect vcl = 1, chan_MCL1CUACK_full = 0, chan_MCL1CUACK_type = 0,  chan_MCL1CUACK_id = 0, chan_MCL1CUACK_addr = 0;
+    };
+    
+}    
+    
+process Mem_cache0 {
+    byte src_save = 0;
+    byte ligne_addr = 0; // Memory cache de l'adresse " 0 "
+    byte CACHE_TH = 2;
+    byte c_id[2]; // Tableau qui contient les id des caches
+    byte v_c_id[2]; // Tableau qui contient la validité des cases dans c_id
+    //byte n_cache = 0; // Nombre de caches qui contiennent des copies
+    byte dirty = 0;
+    byte cpt = 0;
+    byte rsp_cpt = 0;
+    state empty, read_wait, get_write_wait, write_wait, valid_multicast, valid_multicast_clnup, valid_broadcast, valid_multicast_update, valid_broadcast_inv, update_wait, update_wait_clnup, broadcast_inv_wait, broadcast_inv_wait_wr, put_wait; 
+    init empty;
+    
+    trans    
+    
+    empty -> read_wait {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCMEMDTREQ_full == 0 ); // RD
+        effect chan_MCMEMDTREQ_full = 1, chan_MCMEMDTREQ_type = 16, src_save = chan_L1MCDTREQ_id, chan_MCMEMDTREQ_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0; // GET
+    },
+
+    empty -> get_write_wait {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCMEMDTREQ_full == 0); // WR
+        effect chan_MCMEMDTREQ_full = 1, chan_MCMEMDTREQ_type = 16, src_save = chan_L1MCDTREQ_id, chan_MCMEMDTREQ_addr = ligne_addr, dirty = 1, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_id = 0, chan_L1MCDTREQ_addr = 0; // GET
+    }, 
+    
+    get_write_wait -> write_wait {
+        guard (chan_MCL1DTACK_full == 0); 
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_id = src_save, src_save = 0, chan_MCL1DTACK_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0; // ACK_WR
+    },  
+    
+    write_wait -> valid_multicast {
+        guard (chan_MEMMCDTACK_full == 1 && chan_MEMMCDTACK_addr == ligne_addr && chan_MEMMCDTACK_type == 18); // ACK_GET
+        effect chan_MEMMCDTACK_full = 0, chan_MEMMCDTACK_type = 0, chan_MEMMCDTACK_addr = 0, n_cache0 = 0; 
+    }, 
+    
+    read_wait -> read_wait {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_MEMMCDTACK_addr == ligne_addr && chan_MCL1DTACK_full == 0); // WR
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, dirty = 1, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_addr = 0, chan_L1MCDTREQ_id = 0; // ACK_WR
+        // sauvegarder la dernière valeure modifiée
+    }, 
+    
+    read_wait -> valid_multicast {
+        guard (chan_MEMMCDTACK_full == 1 && chan_MEMMCDTACK_type == 18 && chan_MEMMCDTACK_addr == ligne_addr && chan_MCL1DTACK_full == 0); // ACK_GET
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = src_save, c_id[0] = src_save, v_c_id[0] = 1, n_cache0 = 1, src_save = 0, chan_MEMMCDTACK_full = 0, chan_MEMMCDTACK_type = 0, chan_MEMMCDTACK_addr = 0; // ACK_RD
+        // On vérifie si dirty == 1 alors la donnée a été modifiée par un autre processeur donc on met à jour la donnée du controleur mémoire selon la dernière valeure enregistrée,
+    },
+    
+    valid_multicast ->  valid_multicast {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCL1DTACK_full == 0 && n_cache0 < CACHE_TH && cpt < CACHE_TH && v_c_id[cpt] == 0 ); // RD
+        effect c_id[cpt] = chan_L1MCDTREQ_id, v_c_id[cpt] = 1, n_cache0 = n_cache0 + 1, chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, chan_MCL1DTACK_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0, cpt = 0; // ACK_RD
+    }, 
+    
+    valid_multicast ->  valid_multicast {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCL1DTACK_full == 0 && n_cache0 < CACHE_TH && cpt < CACHE_TH && v_c_id[cpt] == 1 ); // RD
+        effect cpt = cpt + 1; // Incrémenter cpt jusqu'à ce qu'on trouve une case invalide dans c_id
+    }, 
+    
+    valid_multicast ->  valid_broadcast {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCL1DTACK_full == 0 && n_cache0 >= CACHE_TH); // RD
+        effect n_cache0 = n_cache0 + 1, chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, chan_MCL1DTACK_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0; // ACK_RD
+    },
+   
+    valid_multicast ->  valid_multicast_update {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == ligne_addr ); // WR
+        effect dirty = 1, src_save = chan_L1MCDTREQ_id, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_id = 0, chan_L1MCDTREQ_addr = 0;
+    },
+    
+    valid_multicast_update -> valid_multicast_update {
+        guard (chan_MCL1CPREQ_full == 0 && cpt < CACHE_TH && c_id[cpt] != src_save && v_c_id[cpt] == 1);
+        effect rsp_cpt = rsp_cpt + 1, chan_MCL1CPREQ_full = 1, chan_MCL1CPREQ_type = 12, chan_MCL1CPREQ_addr = ligne_addr, chan_MCL1CPREQ_id = c_id[cpt]; // M_UP
+    },
+    
+    valid_multicast_update -> update_wait {
+        guard (cpt == CACHE_TH);
+        effect cpt = 0;
+    },
+    
+    valid_multicast_update -> valid_multicast_update {
+        guard (cpt < CACHE_TH && (c_id[cpt] == src_save || v_c_id[cpt] == 0));
+        effect  cpt = cpt + 1; // Parcourir le tableau c_id pour envoyer un M_up à tous les caches qui contiennent la donnée modifiée
+    },
+    
+    valid_multicast -> valid_multicast_clnup {
+        guard (chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 &&  chan_L1MCCUREQ_addr == ligne_addr); // CLNUP
+        effect src_save = chan_L1MCCUREQ_id, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_addr = 0, chan_L1MCCUREQ_id =0;
+    },
+    
+    valid_multicast_clnup -> valid_multicast {
+        guard ( cpt == CACHE_TH && chan_MCL1CUACK_full == 0);
+        effect chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_addr = ligne_addr, chan_MCL1CUACK_id = src_save; // ACK_CLNUP
+    },
+    
+    valid_multicast_clnup -> valid_multicast {
+        guard ( cpt < CACHE_TH && v_c_id[cpt] == 1 && c_id[cpt] == src_save);
+        effect v_c_id[cpt] = 0, n_cache0 = n_cache0 - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_addr = ligne_addr, chan_MCL1CUACK_id = src_save;// ACK_CLNUP
+    },
+    
+    valid_multicast_clnup -> valid_multicast_clnup {
+        guard ( v_c_id[cpt] != 1 || c_id[cpt] != src_save);
+        effect cpt = cpt + 1;
+    }, 
+    
+    update_wait ->  update_wait {
+        guard (rsp_cpt > 0 && chan_L1MCCPACK_full == 1 &&  chan_L1MCCPACK_addr == ligne_addr && chan_L1MCCPACK_type == 15); // ACK_M_UP
+        effect rsp_cpt = rsp_cpt - 1, chan_L1MCCPACK_full = 0, chan_L1MCCPACK_addr = 0, chan_L1MCCPACK_type = 0, chan_L1MCCPACK_id = 0; 
+    },
+    
+    update_wait -> update_wait_clnup {
+        guard (rsp_cpt > 0 && chan_L1MCCUREQ_full == 1 &&  chan_L1MCCUREQ_addr == ligne_addr && chan_L1MCCUREQ_type == 8); // CLNUP
+        effect rsp_cpt = rsp_cpt - 1, src_save = chan_L1MCCUREQ_id, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_addr = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_id = 0; 
+    },                                            
+    
+    update_wait_clnup -> update_wait {
+        guard ( cpt < CACHE_TH && v_c_id[cpt] == 1 && c_id[cpt] == src_save && chan_MCL1CUACK_full == 0);
+        effect  v_c_id[cpt] = 0, n_cache0 = n_cache0 - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_addr = ligne_addr, chan_MCL1CUACK_id = src_save ; // ACK_CLNUP
+    }, 
+    
+    update_wait_clnup -> update_wait_clnup {
+        guard ( v_c_id[cpt] != 1 || c_id[cpt] != src_save);
+        effect  cpt = cpt + 1;
+    },
+    
+    update_wait -> valid_multicast {
+        guard (rsp_cpt == 0 && chan_MCL1DTACK_full == 0);
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_id = src_save, chan_MCL1DTACK_addr = ligne_addr, src_save = 0; // ACK_WR    
+    },
+    
+    valid_broadcast -> valid_broadcast {
+        guard ( chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_addr == ligne_addr && chan_L1MCDTREQ_type == 4 && chan_MCL1DTACK_full == 0); // RD
+        effect n_cache0 = n_cache0 + 1, chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_addr = 0, chan_L1MCDTREQ_id = 0; // ACK_RD       
+    },
+    
+    valid_broadcast -> valid_broadcast_inv {
+        guard ( chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_addr == ligne_addr && chan_L1MCDTREQ_type == 5); // WR
+        effect dirty = 1, src_save = chan_L1MCDTREQ_id, rsp_cpt = n_cache0, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_addr = 0, chan_L1MCDTREQ_id = 0;      
+    },
+    
+    valid_broadcast_inv -> broadcast_inv_wait {
+        guard (cpt == NB_CACHES);
+        effect cpt = 0;
+    },
+    
+    valid_broadcast_inv -> valid_broadcast_inv {
+        guard (cpt < NB_CACHES &&  chan_MCL1CPREQ_full == 0);
+        effect chan_MCL1CPREQ_full = 1, chan_MCL1CPREQ_type = 10, chan_MCL1CPREQ_id = cpt,chan_MCL1CPREQ_addr = ligne_addr, cpt = cpt + 1; // B_INV
+    },
+    
+    valid_broadcast -> valid_broadcast {
+        guard (chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 && chan_L1MCCUREQ_addr == ligne_addr && chan_MCL1CUACK_full == 0) ; // CLNUP
+        effect n_cache0 = n_cache0 - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_id = chan_L1MCCUREQ_id, chan_MCL1CUACK_addr = ligne_addr, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_id = 0, chan_L1MCCUREQ_addr = 0;  // ACK_CLNUP
+    },
+        
+    broadcast_inv_wait -> broadcast_inv_wait {
+        guard (rsp_cpt > 0 && chan_L1MCCPACK_full == 1 && chan_L1MCCPACK_type == 13 && chan_L1MCCPACK_addr == ligne_addr); // ACK_B_INV
+        effect rsp_cpt = rsp_cpt - 1, chan_L1MCCPACK_full = 0, chan_L1MCCPACK_type = 0, chan_L1MCCPACK_addr = 0, chan_L1MCCPACK_id = 0;
+    }, 
+            
+    broadcast_inv_wait -> broadcast_inv_wait {
+        guard (rsp_cpt > 0 && chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 && chan_L1MCCUREQ_addr == ligne_addr && chan_MCL1CUACK_full == 0); // CLNUP
+        effect rsp_cpt = rsp_cpt - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_id = chan_L1MCCUREQ_id, chan_MCL1CUACK_addr = ligne_addr, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_id = 0, chan_L1MCCUREQ_addr = 0;  // ACK_CLNUP 
+    },       
+    
+    broadcast_inv_wait -> broadcast_inv_wait_wr {
+        guard (rsp_cpt == 0 && chan_MCL1DTACK_full == 0);
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = src_save; // ACK_WR
+    },
+    
+    broadcast_inv_wait_wr -> broadcast_inv_wait_wr {
+        guard (cpt < CACHE_TH);
+        effect v_c_id[cpt] = 0, c_id[cpt] = 0, cpt = cpt + 1; // on vide la liste des copies
+    }, 
+    
+    broadcast_inv_wait_wr -> put_wait {
+        guard (cpt == CACHE_TH && chan_MCMEMDTREQ_full == 0);
+        effect chan_MCMEMDTREQ_full = 1, chan_MCMEMDTREQ_type = 17, chan_MCMEMDTREQ_addr = ligne_addr, cpt = 0;  // PUT
+    },
+    
+    put_wait -> empty {
+        guard (chan_MEMMCDTACK_full == 1 && chan_MEMMCDTACK_addr == ligne_addr && chan_MEMMCDTACK_type == 19); // ACK_PUT
+        effect chan_MEMMCDTACK_full = 0, chan_MEMMCDTACK_type = 0, chan_MEMMCDTACK_addr = 0;
+    };                                                                      
+}
+
+process Mem_cache1 {
+    byte src_save = 0;
+    byte ligne_addr = 1; // Memory cache de l'adresse " 0 "
+    byte CACHE_TH = 2;
+    byte c_id[2]; // Tableau qui contient les id des caches
+    byte v_c_id[2]; // Tableau qui contient la validité des cases dans c_id
+    //byte n_cache = 0; // Nombre de caches qui contiennent des copies
+    byte dirty = 0;
+    byte cpt = 0;
+    byte rsp_cpt = 0;
+    state empty, read_wait, get_write_wait, write_wait, valid_multicast, valid_multicast_clnup, valid_broadcast, valid_multicast_update, valid_broadcast_inv, update_wait, update_wait_clnup, broadcast_inv_wait, broadcast_inv_wait_wr, put_wait; 
+    init empty;
+    
+    trans    
+    
+    empty -> read_wait {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCMEMDTREQ_full == 0 ); // RD
+        effect chan_MCMEMDTREQ_full = 1, chan_MCMEMDTREQ_type = 16, src_save = chan_L1MCDTREQ_id, chan_MCMEMDTREQ_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0; // GET
+    },
+
+    empty -> get_write_wait {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCMEMDTREQ_full == 0); // WR
+        effect chan_MCMEMDTREQ_full = 1, chan_MCMEMDTREQ_type = 16, src_save = chan_L1MCDTREQ_id, chan_MCMEMDTREQ_addr = ligne_addr, dirty = 1, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_id = 0, chan_L1MCDTREQ_addr = 0; // GET
+    }, 
+    
+    get_write_wait -> write_wait {
+        guard (chan_MCL1DTACK_full == 0); 
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_id = src_save, src_save = 0, chan_MCL1DTACK_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0; // ACK_WR
+    },  
+    
+    write_wait -> valid_multicast {
+        guard (chan_MEMMCDTACK_full == 1 && chan_MEMMCDTACK_addr == ligne_addr && chan_MEMMCDTACK_type == 18); // ACK_GET
+        effect chan_MEMMCDTACK_full = 0, chan_MEMMCDTACK_type = 0, chan_MEMMCDTACK_addr = 0, n_cache1 = 0; 
+    }, 
+    
+    read_wait -> read_wait {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_MEMMCDTACK_addr == ligne_addr && chan_MCL1DTACK_full == 0); // WR
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, dirty = 1, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_addr = 0, chan_L1MCDTREQ_id = 0; // ACK_WR
+        // sauvegarder la dernière valeure modifiée
+    }, 
+    
+    read_wait -> valid_multicast {
+        guard (chan_MEMMCDTACK_full == 1 && chan_MEMMCDTACK_type == 18 && chan_MEMMCDTACK_addr == ligne_addr && chan_MCL1DTACK_full == 0); // ACK_GET
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = src_save, c_id[0] = src_save, v_c_id[0] = 1, n_cache1 = 1, src_save = 0, chan_MEMMCDTACK_full = 0, chan_MEMMCDTACK_type = 0, chan_MEMMCDTACK_addr = 0; // ACK_RD
+        // On vérifie si dirty == 1 alors la donnée a été modifiée par un autre processeur donc on met à jour la donnée du controleur mémoire selon la dernière valeure enregistrée,
+    },
+    
+    valid_multicast ->  valid_multicast {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCL1DTACK_full == 0 && n_cache1 < CACHE_TH && cpt < CACHE_TH && v_c_id[cpt] == 0 ); // RD
+        effect c_id[cpt] = chan_L1MCDTREQ_id, v_c_id[cpt] = 1, n_cache1 = n_cache1 + 1, chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, chan_MCL1DTACK_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0, cpt = 0; // ACK_RD
+    }, 
+    
+    valid_multicast ->  valid_multicast {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCL1DTACK_full == 0 && n_cache1 < CACHE_TH && cpt < CACHE_TH && v_c_id[cpt] == 1 ); // RD
+        effect cpt = cpt + 1; // Incrémenter cpt jusqu'à ce qu'on trouve une case invalide dans c_id
+    }, 
+    
+    valid_multicast ->  valid_broadcast {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 4 && chan_L1MCDTREQ_addr == ligne_addr && chan_MCL1DTACK_full == 0 && n_cache1 >= CACHE_TH); // RD
+        effect n_cache1 = n_cache1 + 1, chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, chan_MCL1DTACK_addr = ligne_addr, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0,chan_L1MCDTREQ_id = 0,chan_L1MCDTREQ_addr = 0; // ACK_RD
+    },
+   
+    valid_multicast ->  valid_multicast_update {
+        guard (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == ligne_addr ); // WR
+        effect dirty = 1, src_save = chan_L1MCDTREQ_id, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_id = 0, chan_L1MCDTREQ_addr = 0;
+    },
+    
+    valid_multicast_update -> valid_multicast_update {
+        guard (chan_MCL1CPREQ_full == 0 && cpt < CACHE_TH && c_id[cpt] != src_save && v_c_id[cpt] == 1);
+        effect rsp_cpt = rsp_cpt + 1, chan_MCL1CPREQ_full = 1, chan_MCL1CPREQ_type = 12, chan_MCL1CPREQ_addr = ligne_addr, chan_MCL1CPREQ_id = c_id[cpt]; // M_UP
+    },
+    
+    valid_multicast_update -> update_wait {
+        guard (cpt == CACHE_TH);
+        effect cpt = 0;
+    },
+    
+    valid_multicast_update -> valid_multicast_update {
+        guard (cpt < CACHE_TH && (c_id[cpt] == src_save || v_c_id[cpt] == 0));
+        effect  cpt = cpt + 1; // Parcourir le tableau c_id pour envoyer un M_up à tous les caches qui contiennent la donnée modifiée
+    },
+    
+    valid_multicast -> valid_multicast_clnup {
+        guard (chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 &&  chan_L1MCCUREQ_addr == ligne_addr); // CLNUP
+        effect src_save = chan_L1MCCUREQ_id, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_addr = 0, chan_L1MCCUREQ_id =0;
+    },
+    
+    valid_multicast_clnup -> valid_multicast {
+        guard ( cpt == CACHE_TH && chan_MCL1CUACK_full == 0);
+        effect chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_addr = ligne_addr, chan_MCL1CUACK_id = src_save; // ACK_CLNUP
+    },
+    
+    valid_multicast_clnup -> valid_multicast {
+        guard ( cpt < CACHE_TH && v_c_id[cpt] == 1 && c_id[cpt] == src_save);
+        effect v_c_id[cpt] = 0, n_cache1 = n_cache1 - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_addr = ligne_addr, chan_MCL1CUACK_id = src_save;// ACK_CLNUP
+    },
+    
+    valid_multicast_clnup -> valid_multicast_clnup {
+        guard ( v_c_id[cpt] != 1 || c_id[cpt] != src_save);
+        effect cpt = cpt + 1;
+    }, 
+    
+    update_wait ->  update_wait {
+        guard (rsp_cpt > 0 && chan_L1MCCPACK_full == 1 &&  chan_L1MCCPACK_addr == ligne_addr && chan_L1MCCPACK_type == 15); // ACK_M_UP
+        effect rsp_cpt = rsp_cpt - 1, chan_L1MCCPACK_full = 0, chan_L1MCCPACK_addr = 0, chan_L1MCCPACK_type = 0, chan_L1MCCPACK_id = 0; 
+    },
+    
+    update_wait -> update_wait_clnup {
+        guard (rsp_cpt > 0 && chan_L1MCCUREQ_full == 1 &&  chan_L1MCCUREQ_addr == ligne_addr && chan_L1MCCUREQ_type == 8); // CLNUP
+        effect rsp_cpt = rsp_cpt - 1, src_save = chan_L1MCCUREQ_id, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_addr = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_id = 0; 
+    },                                            
+    
+    update_wait_clnup -> update_wait {
+        guard ( cpt < CACHE_TH && v_c_id[cpt] == 1 && c_id[cpt] == src_save && chan_MCL1CUACK_full == 0);
+        effect  v_c_id[cpt] = 0, n_cache1 = n_cache1 - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_addr = ligne_addr, chan_MCL1CUACK_id = src_save ; // ACK_CLNUP
+    }, 
+    
+    update_wait_clnup -> update_wait_clnup {
+        guard ( v_c_id[cpt] != 1 || c_id[cpt] != src_save);
+        effect  cpt = cpt + 1;
+    },
+    
+    update_wait -> valid_multicast {
+        guard (rsp_cpt == 0 && chan_MCL1DTACK_full == 0);
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_id = src_save, chan_MCL1DTACK_addr = ligne_addr, src_save = 0; // ACK_WR    
+    },
+    
+    valid_broadcast -> valid_broadcast {
+        guard ( chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_addr == ligne_addr && chan_L1MCDTREQ_type == 4 && chan_MCL1DTACK_full == 0); // RD
+        effect n_cache1 = n_cache1 + 1, chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 6, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = chan_L1MCDTREQ_id, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_addr = 0, chan_L1MCDTREQ_id = 0; // ACK_RD       
+    },
+    
+    valid_broadcast -> valid_broadcast_inv {
+        guard ( chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_addr == ligne_addr && chan_L1MCDTREQ_type == 5); // WR
+        effect dirty = 1, src_save = chan_L1MCDTREQ_id, rsp_cpt = n_cache1, chan_L1MCDTREQ_full = 0, chan_L1MCDTREQ_type = 0, chan_L1MCDTREQ_addr = 0, chan_L1MCDTREQ_id = 0;      
+    },
+    
+    valid_broadcast_inv -> broadcast_inv_wait {
+        guard (cpt == NB_CACHES);
+        effect cpt = 0;
+    },
+    
+    valid_broadcast_inv -> valid_broadcast_inv {
+        guard (cpt < NB_CACHES &&  chan_MCL1CPREQ_full == 0);
+        effect chan_MCL1CPREQ_full = 1, chan_MCL1CPREQ_type = 10, chan_MCL1CPREQ_id = cpt,chan_MCL1CPREQ_addr = ligne_addr, cpt = cpt + 1; // B_INV
+    },
+    
+    valid_broadcast -> valid_broadcast {
+        guard (chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 && chan_L1MCCUREQ_addr == ligne_addr && chan_MCL1CUACK_full == 0) ; // CLNUP
+        effect n_cache1 = n_cache1 - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_id = chan_L1MCCUREQ_id, chan_MCL1CUACK_addr = ligne_addr, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_id = 0, chan_L1MCCUREQ_addr = 0;  // ACK_CLNUP
+    },
+        
+    broadcast_inv_wait -> broadcast_inv_wait {
+        guard (rsp_cpt > 0 && chan_L1MCCPACK_full == 1 && chan_L1MCCPACK_type == 13 && chan_L1MCCPACK_addr == ligne_addr); // ACK_B_INV
+        effect rsp_cpt = rsp_cpt - 1, chan_L1MCCPACK_full = 0, chan_L1MCCPACK_type = 0, chan_L1MCCPACK_addr = 0, chan_L1MCCPACK_id = 0;
+    }, 
+            
+     broadcast_inv_wait -> broadcast_inv_wait {
+        guard (rsp_cpt > 0 && chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 && chan_L1MCCUREQ_addr == ligne_addr && chan_MCL1CUACK_full == 0); // CLNUP
+        effect rsp_cpt = rsp_cpt - 1, chan_MCL1CUACK_full = 1, chan_MCL1CUACK_type = 9, chan_MCL1CUACK_id = chan_L1MCCUREQ_id, chan_MCL1CUACK_addr = ligne_addr, chan_L1MCCUREQ_full = 0, chan_L1MCCUREQ_type = 0, chan_L1MCCUREQ_id = 0, chan_L1MCCUREQ_addr = 0;  // ACK_CLNUP 
+    },       
+    
+    broadcast_inv_wait -> broadcast_inv_wait_wr {
+        guard (rsp_cpt == 0 && chan_MCL1DTACK_full == 0);
+        effect chan_MCL1DTACK_full = 1, chan_MCL1DTACK_type = 7, chan_MCL1DTACK_addr = ligne_addr, chan_MCL1DTACK_id = src_save; // ACK_WR
+    },
+    
+    broadcast_inv_wait_wr -> broadcast_inv_wait_wr {
+        guard (cpt < CACHE_TH);
+        effect v_c_id[cpt] = 0, c_id[cpt] = 0, cpt = cpt + 1; // on vide la liste des copies
+    }, 
+    
+    broadcast_inv_wait_wr -> put_wait {
+        guard (cpt == CACHE_TH && chan_MCMEMDTREQ_full == 0);
+        effect chan_MCMEMDTREQ_full = 1, chan_MCMEMDTREQ_type = 17, chan_MCMEMDTREQ_addr = ligne_addr, cpt = 0;  // PUT
+    },
+    
+    put_wait -> empty {
+        guard (chan_MEMMCDTACK_full == 1 && chan_MEMMCDTACK_addr == ligne_addr && chan_MEMMCDTACK_type == 19); // ACK_PUT
+        effect chan_MEMMCDTACK_full = 0, chan_MEMMCDTACK_type = 0, chan_MEMMCDTACK_addr = 0;
+    };                                                           
+}
+
+process Memory {
+    
+    state ready; 
+    init ready;
+    
+    trans
+    
+    ready -> ready {
+        guard (chan_MCMEMDTREQ_full == 1 && chan_MCMEMDTREQ_type == 16 && chan_MEMMCDTACK_full == 0);
+        effect  chan_MEMMCDTACK_full = 1, chan_MEMMCDTACK_type = 18, chan_MEMMCDTACK_addr = chan_MCMEMDTREQ_addr, chan_MCMEMDTREQ_full = 0,chan_MCMEMDTREQ_type = 0, chan_MCMEMDTREQ_addr = 0;  
+    },
+    
+    ready -> ready {
+        guard (chan_MCMEMDTREQ_full == 1 && chan_MCMEMDTREQ_type == 17 && chan_MEMMCDTACK_full == 0);
+        effect  chan_MEMMCDTACK_full = 1, chan_MEMMCDTACK_type = 19, chan_MEMMCDTACK_addr = chan_MCMEMDTREQ_addr, chan_MCMEMDTREQ_full = 0,chan_MCMEMDTREQ_type = 0, chan_MCMEMDTREQ_addr = 0;  
+    };
+}  
+    
+
+system async;
+
+
+
+

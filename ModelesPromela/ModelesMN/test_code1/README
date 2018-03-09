@@ -1,0 +1,9 @@
+------------------------------------------------------
+----------- répertoire test_code1 --------------------
+------------------------------------------------------
+
+Dans ce repértoire, on teste le modèle du cache L1, pour tous les transitions possibles, avec les 2 fichier suivant :
+	- CacheL1_v2.pml : on vérifie les transitions d'états de l'automate pour les requetes de lecture et d'écriture.
+	- CacheL1_v3.pml : on vérifie les transitions d'états de l'automate pour les requetes d'invalidation envoyer par le controleur mémoire.
+
+NB : Le code du modèle de cache L1 est inséré dans les deux fichiers.

@@ -1,0 +1,5 @@
+
+#define init P1.x1
+#define wait P1.x2
+
+#property G((wait) -> F(init))

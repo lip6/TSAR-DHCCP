@@ -1,0 +1,65 @@
+
+byte chan_P1P2_full = 0; // 0 => canal vide, 1 => y a un message dans le canal
+byte chan_P2P1_full = 0;  // 0 => canal vide, 1 => y a un message dans le canal
+
+byte global_var = 0;
+
+process P1 {
+     
+    state x1, x2; 
+    init x1;
+    
+    trans    
+    
+    x1 -> x2 {
+        guard (chan_P1P2_full == 0);
+        effect chan_P1P2_full = 1;
+    },
+
+    x1 -> x2 {
+        guard (chan_P1P2_full == 0);
+    },
+    
+    x2 -> x1 {
+        guard (chan_P2P1_full == 1); 
+        effect chan_P2P1_full = 0, global_var = 1;
+    };
+    
+}
+ 
+ 
+process P2 {
+     
+    byte local_var = 0;
+    state y1, y2, y3;  
+    init y1;
+
+    trans
+    
+    y1 -> y2 {        
+        guard (chan_P1P2_full == 1);
+        effect chan_P1P2_full = 0;
+    },
+    
+    y2 -> y1 {
+        guard (chan_P2P1_full == 0);
+        effect chan_P2P1_full = 1;        
+    },
+    
+    y1 -> y3 {
+        guard (true);
+        effect local_var = 1;
+    },
+    
+    y3 -> y1 {
+        guard (global_var == 1);
+        effect local_var = 0;
+    };
+    
+}
+ 
+
+
+system async;
+
+

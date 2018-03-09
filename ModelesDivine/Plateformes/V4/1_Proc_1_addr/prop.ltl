@@ -1,0 +1,41 @@
+#define p_w_rd (Processeur.wait_rd)
+#define p_w_wr (Processeur.wait_wr)
+#define p_rdy (Processeur.ready)
+
+#define dt_rd (chan_PL1DTREQ_type == 0)
+#define dt_wr (chan_PL1DTREQ_type == 1)
+
+#define ack_dt_rd (chan_L1PDTACK_type == 2)
+#define ack_dt_wr (chan_L1PDTACK_type == 3)
+
+#define wr ( chan_L1MCDTREQ_type == 5)
+
+#define ack_wr (chan_MCL1DTACK_type == 7)
+
+#define cl1_ety (CacheL1.empty)
+#define cl1_v_dt (CacheL1.valid_data)
+#define cl1_ms (CacheL1.miss)
+#define cl1_wwi (CacheL1.write_wait_empty)
+
+#define cm_vm (Mem_cache.valid_multicast)
+
+//#property G(F(p_w_rd || p_w_wr))   // vrai : Infiniment souvent à tout moment le processeur peut étre en attente de lecture ou en attente d'écriture
+
+//#property G((p_w_rd || p_w_wr) -> F(p_rdy)) // vrai Infiniment souvent si le processeur est en attente de lecture ou en attente d'écriture alors à un moment dans le future il recevra un acquittement  et repasse à l'état Ready
+
+//#property G(p_w_rd -> F(cl1_v_dt))   // vrai : infiniment souvent, si le processeur est en attente de lecture alors à un moment dans le future le cacheL1 passe à l'état Valid_data 
+
+//#property G((p_w_rd && cl1_v_dt) -> F(cl1_v_dt && ack_dt_rd)) // vrai : infiniment souvent,  si le processeur est en attente de lecture et que le cacheL1 est dans l'état valid_data alors à un moment dans le future le CacheL1 envoie l'acquittement à la demande de lecture et reste dans le même état.
+
+//#property G((p_w_wr && cl1_v_dt) -> F(cl1_v_dt && ack_dt_wr)) // vrai : infiniment souvent,  si le processeur est en attente d'écriture et que le cacheL1 est dans l'état valid_data alors à un moment dans le future le CacheL1 envoie l'acquittement à la demande d'écriture puis passe à l'état  valid_data. 
+
+//#property G(cl1_ms -> F(cl1_v_dt && cm_vm)) 
+// vrai : infiniment souvent,  si le CacheL1 est à l'état Miss alors à un moment dans le future le CacheL1 et le Contrôleur Mémoire passent respectivement à l'état valid_data et valid_multicast. 
+
+//#property G(p_w_rd -> (p_w_rd U ack_dt_rd))   // vrai : infiniment souvent,  si le Processeur est en attente de lecture alors il va rester dans cet état jusqu'à réception d'un 	acquittement à sa demande de lecture. 
+
+//#property G(p_w_wr -> (p_w_wr U ack_dt_wr)) // vrai  : infiniment souvent,  si le Processeur est en attente d'écriture alors il va rester dans cet état jusqu'à réception d'un 	acquittement à sa demande d'écriture. 
+
+
+//#property F(G(!p_w_wr) && cl1_v_dt) -> FG(cl1_v_dt)  // échoue mais pourquoi ??
+//#property G((p_w_wr && cl1_ety) -> F(cl1_wwi))  // échoue

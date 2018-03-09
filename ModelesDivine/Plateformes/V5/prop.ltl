@@ -1,0 +1,190 @@
+#define p0_w_rd (Processeur0.wait_rd)
+#define p0_w_wr (Processeur0.wait_wr)
+#define p0_rdy (Processeur0.ready)
+
+#define p1_w_rd (Processeur1.wait_rd)
+#define p1_w_wr (Processeur1.wait_wr)
+#define p1_rdy (Processeur1.ready)
+
+#define p2_w_rd (Processeur2.wait_rd)
+#define p2_w_wr (Processeur2.wait_wr)
+#define p2_rdy (Processeur2.ready)
+
+#define ch_l1pdtack_ety (chan_L1PDTACK0_full == 0)
+#define rd_addr_1 (chan_PL1DTREQ_full == 1 && chan_PL1DTREQ_addr == 1 && chan_PL1DTREQ_type == 0)
+
+#define clnup_0 (chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 && chan_L1MCCUREQ_addr == 0)
+#define ack_clnup_0 (chan_MCL1DTACK_full == 1 && chan_MCL1DTACK_type == 9 && chan_MCL1DTACK_addr == 0)
+
+#define clnup_1 (chan_L1MCCUREQ_full == 1 && chan_L1MCCUREQ_type == 8 && chan_L1MCCUREQ_addr == 1)
+#define ack_clnup_1 (chan_MCL1DTACK_full == 1 && chan_MCL1DTACK_type == 9 && chan_MCL1DTACK_addr == 1)
+
+#define rd_dt0_0 (chan_PL1DTREQ0_full == 1 && chan_PL1DTREQ0_type == 0 && chan_PL1DTREQ0_addr == 0)
+#define rd_dt0_1 (chan_PL1DTREQ0_full == 1 && chan_PL1DTREQ0_type == 0 && chan_PL1DTREQ0_addr == 1)
+
+#define rd_dt1_0 (chan_PL1DTREQ1_full == 1 && chan_PL1DTREQ1_type == 0 && chan_PL1DTREQ1_addr == 0)
+#define rd_dt1_1 (chan_PL1DTREQ1_full == 1 && chan_PL1DTREQ1_type == 0 && chan_PL1DTREQ1_addr == 1)
+
+#define wr_addr0_0 (chan_PL1DTREQ0_full == 1 && chan_PL1DTREQ0_type == 1 && chan_PL1DTREQ0_addr == 0)
+#define wr_addr0_1 (chan_PL1DTREQ0_full == 1 && chan_PL1DTREQ0_type == 1 && chan_PL1DTREQ0_addr == 1)
+
+#define wr_addr1_0 (chan_PL1DTREQ1_full == 1 && chan_PL1DTREQ1_type == 1 && chan_PL1DTREQ1_addr == 0)
+#define wr_addr1_1 (chan_PL1DTREQ1_full == 1 && chan_PL1DTREQ1_type == 1 && chan_PL1DTREQ1_addr == 1)
+
+#define wr_0 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 0)
+#define wr_1 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 1)
+
+#define wr_id0_0 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 0 && chan_L1MCDTREQ_id == 0)
+#define wr_id0_1 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 1 && chan_L1MCDTREQ_id == 0)
+
+#define wr_id1_0 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 0 && chan_L1MCDTREQ_id == 1)
+#define wr_id1_1 (chan_L1MCDTREQ_full == 1 && chan_L1MCDTREQ_type == 5 && chan_L1MCDTREQ_addr == 1 && chan_L1MCDTREQ_id == 1)
+
+#define up0_0 (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_addr == 0 && chan_MCL1CPREQ_id == 0 )
+#define up1_0 (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_addr == 0 && chan_MCL1CPREQ_id == 1 )
+
+#define up0_1 (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_addr == 1 && chan_MCL1CPREQ_id == 0 )
+#define up1_1 (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 12 && chan_MCL1CPREQ_addr == 1 && chan_MCL1CPREQ_id == 1 )
+
+#define b_inv (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 10)
+#define m_inv (chan_MCL1CPREQ_full == 1 && chan_MCL1CPREQ_type == 11)
+
+#define dt_rd (chan_PL1DTREQ_type == 0)
+#define dt_wr (chan_PL1DTREQ_type == 1)
+
+#define addr_req_0 (chan_PL1DTREQ_addr == 0)
+#define addr_req_1 (chan_PL1DTREQ_addr == 1)
+
+#define ack_dt_rd_0 (chan_L1PDTACK0_type == 2)
+#define ack_dt_wr_0 (chan_L1PDTACK0_type == 3)
+
+#define ack_dt_rd_1 (chan_L1PDTACK1_type == 2)
+#define ack_dt_wr_1 (chan_L1PDTACK1_type == 3)
+
+#define cl1_0_addr_0 (cl1_0_addr_save == 0)
+#define cl1_0_addr_1 (cl1_0_addr_save == 1)
+
+#define cl1_1_addr_0 (cl1_1_addr_save == 0)
+#define cl1_1_addr_1 (cl1_1_addr_save == 1)
+
+#define wr ( chan_L1MCDTREQ_type == 5)
+
+#define ack_wr (chan_MCL1DTACK_type == 7)
+
+#define cl1_0_ety (CacheL1_0.Empty)
+
+#define cl1_0_v_dt (CacheL1_0.valid_data)
+#define cl1_1_v_dt (CacheL1_1.valid_data)
+
+#define cl1_0_ms (CacheL1_0.miss)
+#define cl1_0_wwe (CacheL1_0.write_wait_Empty)
+
+#define cl1_1_ms (CacheL1_1.miss)
+#define cl1_1_wwe (CacheL1_1.write_wait_Empty)
+
+#define addr_cache0 (addr_cache_0 == 0)
+#define addr_cache1 (addr_cache_1 == 1)
+
+#define cm_vm_0 (Mem_cache0.valid_multicast)
+#define cm_vm_1 (Mem_cache1.valid_multicast)
+
+#define cm_vm_clnup (Mem_cache1.valid_multicast_clnup)
+
+
+#define cm_vm_u_0 (Mem_cache0.valid_multicast_update)
+#define cm_vm_u_1 (Mem_cache1.valid_multicast_update)
+
+#define cm_ety_0 (Mem_cache0.Empty)
+#define cm_ety_1 (Mem_cache1.Empty)
+
+
+#define ligne_valid0 (v_cache_valide_0 == 1)
+#define ligne_invalid0 (v_cache_valide_0 == 0)
+
+#define ligne_valid1 (v_cache_valide_1 == 1)
+#define ligne_invalid1 (v_cache_valide_1 == 0)
+
+#define nb_copie_addr0_vide (n_copies_0 == 0)
+#define nb_copie_addr0 (n_copies_0 == 1)
+
+#define nb_copie_0 (n_copies_0 == 2)
+#define nb_copie_1 (n_copies_1 == 2)
+
+#define nb_copie_addr1_vide (n_copies_1 == 0)
+#define nb_copie_addr1 (n_copies_1 == 1)
+
+#define ligne_cache0_0 (addr_cache_0 == 0)
+#define ligne_cache0_1 (addr_cache_0 == 1)
+
+#define ligne_cache1_0 (addr_cache_0 == 0)
+#define ligne_cache1_1 (addr_cache_0 == 1)
+
+
+//#property G(F(p0_w_rd || p0_w_wr || p1_w_rd || p1_w_wr || p2_w_rd || p2_w_wr)) 
+
+// blocage : Infiniment souvent à un moment le processeur0 / processeur1 est en attente de lecture ou d'écriture de la donnée d'adresse 0
+
+#property G(((p0_w_rd || p0_w_wr) -> F(p0_rdy)) || ((p1_w_rd || p1_w_wr) -> F(p1_rdy)) || ((p2_w_rd || p2_w_wr) -> F(p2_rdy))) 
+
+// blocage : Infiniment souvent si le processeur0 / processeur1  est en attente de lecture ou d'écriture alors à un moment dans le future il reçoit l'acquittement à sa demande puis passe à l'état ready.
+
+//#property G((p0_w_rd || p0_w_wr) -> F(p0_rdy)) // aucun résultat avec la propriété fair
+
+//#property G((p1_w_rd || p1_w_wr) -> F(p1_rdy))  // aucun résultat avec la propriété fair
+
+//#property G((p0_w_rd && rd_dt0_1) -> F(ligne_valid0 && ligne_cache0_1)) // aucun résultat avec la propriété fair : Infiniment souvent, si le processeur0 est en attente de lecture sur la donnée d'adresse 1 alors à un moment dans le future le ligne de son cacheL1 passe à l'état Valide et contient la donnée d'adresse 1
+
+//#property G((p0_w_wr && ligne_valid0 && ligne_cache0_0) -> ((ligne_valid0 && ligne_cache0_0) U rd_dt0_1)) // vrai  avec la propriété fair : 
+//Infiniment souvent, si le processeur0 est en attente d'écriture et que la ligne de son cacheL1 est à l'état Valide et contient la donnée d'adresse 0 alors le cacheL1 reste dans cet état et contient la donnée d'adresse 0 jusqu'à ce que le processeur 0 envoie une demande de lecture sur la donnée d'adresse 1.
+
+//#property G((p0_w_rd -> (p0_w_rd U ack_dt_rd_0)) ||  (p1_w_rd -> (p1_w_rd U ack_dt_rd_1))) // vrai : infiniment souvent si le processeur0 / processeur1 est à l'état wait_rd alors il reste dans cet état jusqu'à réception du ACK_DT_RD
+
+//#property G(p0_w_rd -> (p0_w_rd U ack_dt_rd_0)) // vrai  avec la commande fair
+
+//#property G((p0_w_wr -> (p0_w_wr U ack_dt_wr_0)) || (p1_w_wr -> (p1_w_wr U ack_dt_wr_1))) // vrai :  infiniment souvent,  si le Processeur0 / processeur1 	est en attente d'écriture alors il va rester dans cet état jusqu'à réception d'un acquittement à sa demande d'écriture. 
+
+//#property G(p0_w_wr -> (p0_w_wr U ack_dt_wr_0)) // vrai  avec la commande fair
+
+//#property G((rd_dt0_0 && cm_ety_0) -> F(cm_vm_0 && nb_copie_addr0)) 
+// vrai avec la commande fair : infiniment souvent si le processeur0 envoie une demande de lecture sur la donnée d'adresse 0 et que le contrôleur mémoire est à l'état empty alors à un moment dans le future le controleur mémoire passe à l'état valide_multicast avec un nombre de copies égale à 1
+//#property G((rd_dt1_0 && cm_ety_0) -> F(cm_vm_0 && nb_copie_addr0)) // vrai avec la commande fair : infiniment souvent si le processeur1 envoie une demande de lecture sur la donnée d'adresse 0 et que le contrôleur mémoire est à l'état empty alors à un moment dans le future le controleur mémoire passe à l'état valide_multicast avec un nombre de copies égale à 1
+
+
+//#property G((wr_addr0_0 && cm_ety_0) -> F(cm_vm_0 && nb_copie_addr0_vide)) // vrai avec la commande fair : infiniment souvent si le processeur0 envoie une demande d'écriture sur la donnée d'adresse 0 et que le contrôleur mémoire est à l'état empty alors à un moment dans le future le controleur mémoire passe à l'état valide_multicast avec un nombre de copies égale à 0
+//#property G((wr_addr1_0 && cm_ety_0) -> F(cm_vm_0 && nb_copie_addr0_vide)) // vrai avec la commande fair : infiniment souvent si le processeur1 envoie une demande d'écriture sur la donnée d'adresse 0 et que le contrôleur mémoire est à l'état empty alors à un moment dans le future le controleur mémoire passe à l'état valide_multicast avec un nombre de copies égale à 1
+
+
+//#property G((ligne_valid0 && ligne_cache0_1 && ligne_valid1 && ligne_cache1_1 && wr_addr1_1) -> F (up0_1)) // vrai avec la commande fair : Infiniment souvent si les lignes des deux cacheL1_0 et cacheL1_1 sont valides, contiennent la donnée d'adresse 1, et que le processeur1 envoie une demande d'écriture sur cette même donnée alors à un moment dans le future le contrôleur mémoire envoie un multicast_update pour le cacheL1_0 pour mettre à jour sa donnée de cache.
+
+//#property G((ligne_valid0 && ligne_cache0_1 && ligne_valid1 && ligne_cache1_1 && wr_addr0_1) -> F (up1_1)) // vrai avec la commande fair : Infiniment souvent si les lignes des deux cacheL1_0 et cacheL1_1 sont valides, contiennent la donnée d'adresse 1, et que le processeur0 envoie une demande d'écriture sur cette même donnée alors à un moment dans le future le contrôleur mémoire envoie un multicast_update pour le cacheL1_1 pour mettre à jour sa donnée de cache.
+
+//#property G((ligne_valid0 && ligne_cache0_1 && ligne_valid1 && ligne_cache1_1) -> (nb_copie_1)) // vrai avec la commande fair :  infiniment souvent si les lignes des deux cacheL1_0 et cacheL1_1 sont valides, contiennent la donnée d'adresse 0, alors on le compteur de copies au niveau du controleur mémoire qui est égal à 2. 
+
+
+//#property G(!(b_inv) && !(m_inv)) // vrai : Infiniment souvent le contrôleur mémoire n'envoie jamais des messages du type : Broadcast_invalidat et Multicast_invalidat.
+
+//#property G(!(m_inv)) // aucun résultat
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

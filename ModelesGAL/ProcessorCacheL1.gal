@@ -1,0 +1,528 @@
+
+$DT_RD = 0 ;
+$DT_WR = 1 ;
+$ACK_DT_RD = 2 ;
+$ACK_DT_WR = 3 ;
+$RD = 0 ;
+$WR = 1 ;
+$ACK_RD = 2 ;
+$ACK_WR = 3 ;
+$CLNUP = 8 ;
+$CLACK = 9 ;
+$B_INV = 10 ;
+$M_INV = 11 ;
+$M_UP = 12 ;
+$ACK_M_UP = 13 ;
+$GET = 14 ;
+$PUT = 15 ;
+$ACK_GET = 16 ;
+$ACK_PUT = 17 ;
+
+$INIT = 0;
+$L1_EMPTY = 1 ;
+$L1_MISS = 2 ;
+$L1_MISS_WAIT = 3 ;
+$L1_MISS_RETRY = 4 ;
+$L1_MISS_CLNUP = 5 ;
+$L1_VALID_DATA = 6 ;
+$L1_WRITE_WAIT_VALID = 7 ;
+$L1_WRITE_WAIT_EMPTY = 8 ;
+$L1_MISS_M_UP = 9 ;
+$L1_MISS_TO_RETRY = 10 ;
+$L1_ZOMBIE = 11 ;
+$L1_WRITE_WAIT_CLACK = 12 ;
+$L1_WRITE_WAIT_CLACK2 = 13 ;
+$L1_MISS_RETRY_RD = 14 ;
+
+
+$MC_EMPTY = 17 ;
+$MC_READ_WAIT = 18 ;
+$MC_GET_WRITE_WAIT = 19 ;
+$MC_WRITE_WAIT = 20 ;
+$MC_VALID_MULTICAST = 21 ;
+$MC_VALID_MULTICAST_CLNUP = 22 ;
+$MC_VALID_BROADCAST = 23 ;
+$MC_VALID_MULTICAST_UPDATE = 24 ;
+$MC_VALID_BROADCAST_INV = 25 ;
+$MC_UPDATE_WAIT = 26 ;
+$MC_UPDATE_WAIT_CLNUP = 27 ;
+$MC_BROADCAST_INV_WAIT = 28 ;
+$MC_BROADCAST_INV_PUT = 29 ;
+$MC_PUT_WAIT = 30 ;
+$MC_VALID_BROADCAST_INIT = 31 ;
+$MC_VALID_MULTICAST_READ = 32 ;
+$MC_VALID_MULTICAST_UPDATE_CLNUP = 33 ;
+
+$PROC_IDLE = 0;
+$PROC_WAIT_READ = 1;
+$PROC_WAIT_WRITE = 2;  
+
+
+//$MEM_IDLE = 0;
+//$MEM_GET = 1;
+//$MEM_PUT = 2;
+
+$NBMEM = 2 ;
+$NB_CACHES = 3 ;
+$CACHEEMPTY = 1 ;
+$CACHE_TH = 2 ;
+
+typedef addr_t = 0 .. $NBMEM - 1 ;
+typedef type_t = 0 .. 19 ;
+typedef id_t = 0 .. $NB_CACHES - 1 ;
+typedef isfull_t = 0..1;
+typedef dirty_t = 0 .. 1 ;
+typedef copie_t = 0 .. $NB_CACHES ;
+typedef cpt_t = 0 .. $CACHE_TH ;
+typedef valid_t = 0 .. 1 ;
+
+
+gal variable {
+	int error = 0 ;
+	transition write_error (addr_t $addr) [true] label "write_error" ($addr) {
+		error = $addr ;
+	}
+	transition read_error (addr_t $addr) [error == $addr] label "read_error" ($addr) {
+	}
+}
+
+gal ChannelAddrType {
+	int isFull = 0 ;
+	int addr = 0 ;
+	int type = 0 ;
+	transition read (addr_t $addr, type_t $rtype) [isFull == 1 && addr == $addr && type == $rtype] label "read" ($addr, $rtype) {
+		isFull = 0 ;
+		addr = 0 ;
+		type = 0 ;
+	}
+	transition write (addr_t $addr, type_t $wtype) [isFull == 0] label "write" ($addr, $wtype) {
+		isFull = 1 ;
+		addr = $addr ;
+		type = $wtype ;
+	}
+}
+
+
+gal ChannelIdAddrType {
+	int isFull = 0 ;
+	int id = 0 ;
+	int addr = 0 ;
+	int type = 0 ;
+	transition read (id_t $id, addr_t $addr, type_t $rtype) [isFull == 1 && addr == $addr && type == $rtype && id == $id]
+	label "read" ($id, $addr, $rtype) {
+		isFull = 0 ;
+		addr = 0 ;
+		type = 0 ;
+		id = 0 ;
+	}
+	transition write (id_t $id, addr_t $addr, type_t $wtype) [isFull == 0] label "write" ($id, $addr, $wtype) {
+		isFull = 1 ;
+		addr = $addr ;
+		type = $wtype ;
+		id = $id ;
+	}
+}
+
+
+gal Processor {
+	int addr;
+	int state = $PROC_IDLE;
+	transition t_read (addr_t $addr) [state == $PROC_IDLE] label "write_PL1DTREQ" ($addr,$DT_RD) {
+		state = $PROC_WAIT_READ;
+		addr = $addr;
+	}
+	transition t_write (addr_t $addr) [state == $PROC_IDLE] label "write_PL1DTREQ" ($addr,$DT_WR) {
+		state = $PROC_WAIT_WRITE;
+		addr = $addr;
+	}
+	transition t_rsp_read (addr_t $addr) [state == $PROC_WAIT_READ && addr == $addr] label 
+	"read_L1PDTACK" ($addr,$ACK_DT_RD) {
+		state = $PROC_IDLE;
+		addr = 0;
+	}
+	transition t_rsp_write (addr_t $addr) [state == $PROC_WAIT_WRITE && addr == $addr] label 
+	"read_L1PDTACK" ($addr,$ACK_DT_RD) {
+		state = $PROC_IDLE;
+		addr = 0;
+	}
+}
+
+// #include "cache_l1.gal"
+
+gal CacheL1 {
+	int state = $INIT ;
+	int v_addr = 0 ; // adresse contenue en cache lorsqu'il est valide
+	int addr_save = 0 ; // sauvegarde de l'adresse d'une requête lors de l'envoi de cette requête
+	int id;
+	
+	
+	transition t_init (id_t $id) [state == $INIT] label "init" ($id) {
+		state = $L1_EMPTY;
+		id = $id;
+	}
+	
+	//addr
+	transition t_Empty_Empty1(id_t $id, addr_t $addr , type_t $type) [state == $L1_EMPTY && ($type == $B_INV ||$type == $M_INV ) && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $type) {}
+	//addr
+	transition t_Empty_Empty2 (id_t $id, addr_t $addr) [state == $L1_EMPTY && id == $id  ] label 
+	 "read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $M_UP, $ACK_M_UP) {}
+	//addr
+	transition t_Empty_Miss  (id_t $id, addr_t $addr) [state == $L1_EMPTY && id == $id  ] label 
+	"read_PL1DTREQ_write_L1MCDTREQ"($id, $addr, $DT_RD, $RD) {
+		state = $L1_MISS ;
+		addr_save = $addr;
+	}
+	
+	transition t_Empty_WriteWaitEmpty (id_t $id, addr_t $addr) [state == $L1_EMPTY && id == $id ] label 
+	"read_PL1DTREQ_write_L1MCDTREQ"($id, $addr, $DT_WR, $WR)  {
+		state = $L1_WRITE_WAIT_EMPTY ;
+		addr_save = $addr;
+	}
+
+	//to self
+	transition t_WriteWaitEmpty_WriteWaitEmpty1 (id_t $id, addr_t $addr, type_t $type)[state == $L1_WRITE_WAIT_EMPTY && ($type == $B_INV ||$type == $M_INV )&& id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $type) {}
+	
+	transition t_WriteWaitEmpty_WriteWaitEmpty2 (id_t $id, addr_t $addr)[state == $L1_WRITE_WAIT_EMPTY && id == $id ] label 
+	 "read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $M_UP, $ACK_M_UP)  {}
+	
+	transition t_WriteWaitEmpty_Empty  (id_t $id, addr_t $addr ) [state == $L1_WRITE_WAIT_EMPTY && addr_save == $addr && id == $id ] label 
+	"read_MCL1DTACK_write_L1PDTACK"($id, $addr, $ACK_WR, $ACK_DT_WR) {
+		state = $L1_EMPTY ;
+		addr_save = 0;
+	}
+	
+	transition t_Miss_MissMUP  (id_t $id, addr_t $addr )[state == $L1_MISS && id == $id ] label 
+	"read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $M_UP, $ACK_M_UP) {
+		state = $L1_MISS_M_UP ;
+	}
+
+	//to self
+	transition t_MissMUP_MissMUP(id_t $id, addr_t $addr,type_t $type) [state == $L1_MISS_M_UP  && ($type == $B_INV ||$type == $M_INV ) && id == $id ] label
+	 "read_MCL1CPREQ"($id, $addr, $type) {}
+	
+	
+	transition t_Miss_MissToRetry(id_t $id, addr_t $addr , type_t $type) [state == $L1_MISS && addr_save == $addr  && ($type == $B_INV ||$type == $M_INV )&& id == $id ] label 
+	"read_MCL1CPREQ" ($id, $addr, $type) {
+		state = $L1_MISS_TO_RETRY ;
+	}
+
+	//to self
+	transition t_Miss_Miss (id_t $id, addr_t $addr, type_t $type)[state == $L1_MISS  && ($type == $B_INV ||$type == $M_INV ) && addr_save != $addr && id == $id  ] label 
+	"read_MCL1CPREQ" ($id, $addr, $type){}
+	
+	//to self
+	transition t_MissToRetry_MissToRetry(id_t $id, addr_t $addr) [state == $L1_MISS_TO_RETRY && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $B_INV) {}
+	
+	
+	transition t_MissToRetry_MissClnup(id_t $id, addr_t $addr) [state == $L1_MISS_TO_RETRY && addr_save == $addr && id == $id ] label 
+	"read_MCL1DTACK"  ($id, $addr, $ACK_RD) {
+		state = $L1_MISS_CLNUP ;
+	}
+
+	//to self
+	transition t_MissRetry_MissRetry(id_t $id, addr_t $addr) [state == $L1_MISS_RETRY && id == $id  ] label 
+	"read_MCL1CPREQ"($id, $addr, $B_INV) {}
+	
+	transition t_MissRetry_MissRetryRD(id_t $id, addr_t $addr) [state == $L1_MISS_RETRY && id == $id ] label 
+	"read_MCL1CLACK"($id, $addr, $CLACK) {
+		state = $L1_MISS_RETRY_RD ;
+	}
+	
+	transition t_MissRetryRD_Miss(id_t $id, addr_t $addr) [state == $L1_MISS_RETRY_RD && addr_save == $addr && id == $id ] label 
+	"write_L1MCDTREQ"($id, $addr, $RD) {
+		state = $L1_MISS ;
+	}
+	
+	//to self
+	transition t_MissRetryRD_MissRetryRD1 (id_t $id, addr_t $addr) [state == $L1_MISS_RETRY_RD && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $B_INV) {}
+	
+	transition t_MissRetryRD_MissRetryRD2 (id_t $id, addr_t $addr) [state == $L1_MISS_RETRY_RD && id == $id ] label 
+	"read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $M_UP, $ACK_M_UP) {}
+	
+	transition t_Miss_ValidData(id_t $id, addr_t $addr) [state == $L1_MISS && addr_save == $addr && id == $id ] label 
+	"read_MCL1DTACK_write_L1PDTACK"($id, $addr, $ACK_RD, $ACK_DT_RD) {
+		state = $L1_VALID_DATA ;
+		addr_save = 0;
+		v_addr = $addr;
+	}
+	
+	//to self
+	transition t_ValidData_ValidData1 ( addr_t $addr) [state == $L1_VALID_DATA && v_addr == $addr] label 
+	"read_PL1DTREQ_write_L1PDTACK"( $addr, $DT_RD, $ACK_DT_RD) {
+	}
+	
+	transition t_ValidData_ValidData2 (id_t $id, addr_t $addr) [state == $L1_VALID_DATA && id == $id ] label  
+	"read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $M_UP, $ACK_M_UP) {
+	
+	}
+	
+	transition t_ValidData_ValidData3 (id_t $id, addr_t $addr,type_t $type) [state == $L1_VALID_DATA && v_addr != $addr && ($type == $B_INV || $type == $M_INV) && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $type) {
+	}
+	
+	transition t_ValidData_Zombie(id_t $id, addr_t $addr,type_t $type) [state == $L1_VALID_DATA && v_addr == $addr  && ($type == $B_INV || $type == $M_INV) && id == $id ] label 
+	"read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $type, $CLNUP) {
+		state = $L1_ZOMBIE ;
+		v_addr= 0;
+	}
+
+	//to self
+	transition t_Zombie_Zombie (id_t $id, addr_t $addr)  [state == $L1_ZOMBIE && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $B_INV) {}
+	
+	transition t_Zombie_Empty (id_t $id, addr_t $addr) [state == $L1_ZOMBIE && id == $id ] label
+	"read_MCL1CLACK" ($id, $addr, $CLACK) {
+		state = $L1_EMPTY ;
+	}
+	
+	transition t_ValidData_MissWait(id_t $id, addr_t $addr1, addr_t $addr2) [state == $L1_VALID_DATA && v_addr != $addr1 && v_addr == $addr2 && id == $id ] label 
+	"read_PL1DTREQ_write_L1MCCPACK"($id, $addr1, $addr2, $DT_RD, $CLNUP) {
+		state = $L1_MISS_WAIT ;
+		addr_save = $addr1;
+		v_addr = 0;
+	}
+	
+	//to self
+	transition t_MissWait_MissWait (id_t $id, addr_t $addr)[state == $L1_MISS_WAIT && id == $id  ] label 
+	"read_MCL1CPREQ"($id, $addr, $B_INV) {}
+	
+	transition t_MissWait_MissRetryRD(id_t $id, addr_t $addr) [state == $L1_MISS_WAIT && id == $id ] label 
+	"read_MCL1CLACK"($id, $addr, $CLACK) {
+		state = $L1_MISS_RETRY_RD ;
+	}
+	
+	transition t_MissMUP_MissClnup(id_t $id, addr_t $addr) [state == $L1_MISS_M_UP && addr_save == $addr && id == $id ] label 
+	"read_MCL1DTACK"($id, $addr, $ACK_RD) {
+		state = $L1_MISS_CLNUP ;
+	}
+	
+	transition t_MissClnup_MissRetry(id_t $id, addr_t $addr) [state == $L1_MISS_CLNUP && addr_save == $addr && id == $id ] label 
+	"write_L1MCCPACK"($id, $addr, $CLNUP) {
+		state = $L1_MISS_RETRY ;
+	}
+	
+	//to self
+	transition t_MissClnup_MissClnup (id_t $id, addr_t $addr) [state == $L1_MISS_CLNUP && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $B_INV) {}
+	
+	transition t_ValidData_WriteWaitVaild (id_t $id, addr_t $addr) [state == $L1_VALID_DATA && id == $id ] label 
+	"read_PL1DTREQ_write_L1MCDTREQ"($id, $addr, $DT_WR, $WR) {
+		state = $L1_WRITE_WAIT_VALID ;
+		addr_save = $addr;
+	}
+
+	//to self
+	transition t_WriteWaitValid_WriteWaitValid1 (id_t $id, addr_t $addr,type_t $type) [state == $L1_WRITE_WAIT_VALID && v_addr != $addr  && ($type == $B_INV || $type == $M_INV) && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $type) {}
+	
+	//transition t_WriteWaitValid_WriteWaitValid2 (id_t $id, addr_t $addr) [state == $L1_WRITE_WAIT_VALID && v_addr != $addr && id == $id ] label 
+	transition t_WriteWaitValid_WriteWaitValid2 (id_t $id, addr_t $addr) [state == $L1_WRITE_WAIT_VALID && id == $id ] label 
+	"read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $M_UP, $ACK_M_UP) {}
+	
+	
+	transition t_WriteWaitValid_WriteWaitClack(id_t $id, addr_t $addr, type_t $type) [state == $L1_WRITE_WAIT_VALID && v_addr == $addr && ($type == $B_INV || $type == $M_INV)&& id == $id ] label 
+	"read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $type, $CLNUP) {
+		state = $L1_WRITE_WAIT_CLACK ;
+		v_addr = 0;
+	}
+	
+	transition t_WriteWaitValid_ValidData (id_t $id, addr_t $addr) [state == $L1_WRITE_WAIT_VALID && addr_save == $addr && id == $id ] label 
+	"read_MCL1DTACK_write_L1PDTACK"($id, $addr, $ACK_WR, $ACK_DT_WR) {
+		state = $L1_VALID_DATA ;
+		addr_save = 0;
+	}
+	
+	transition t_WriteWaitClack_WriteWaitEmpty (id_t $id, addr_t $addr)[state == $L1_WRITE_WAIT_CLACK && id == $id ] label 
+	"read_MCL1CLACK"($id, $addr, $CLACK) {
+		state = $L1_WRITE_WAIT_EMPTY ;
+	}
+	
+	transition t_WriteWaitClack_WriteWaitClack2 (id_t $id, addr_t $addr) [state == $L1_WRITE_WAIT_CLACK && addr_save == $addr && id == $id ] label 
+	"read_MCL1DTACK_write_L1PDTACK"($id, $addr, $ACK_WR, $ACK_DT_WR) {
+		state = $L1_WRITE_WAIT_CLACK2 ;
+		addr_save = 0;
+		
+	}
+	
+	//to self
+	transition t_WriteWaitClack_WriteWaitClack (id_t $id, addr_t $addr)[state == $L1_WRITE_WAIT_CLACK && id == $id ] label 
+	"read_MCL1CPREQ" ($id, $addr, $B_INV){}
+	
+	transition t_WriteWaitClack2_Empty (id_t $id, addr_t $addr)[state == $L1_WRITE_WAIT_CLACK2 && id == $id ] label 
+	"read_MCL1CLACK" ($id, $addr, $CLACK){
+		state = $L1_EMPTY ;
+	}
+	
+	//to self
+	transition t_WriteWaitClack2_WriteWaitClack2 (id_t $id, addr_t $addr)[state == $L1_WRITE_WAIT_CLACK2 && id == $id ] label 
+	"read_MCL1CPREQ"($id, $addr, $B_INV) {}
+	
+	
+	
+}
+
+
+
+composite ProcessorCacheL1 {
+	Processor p;
+	CacheL1 c;
+	ChannelAddrType chan_PL1DTREQ;
+	ChannelAddrType chan_L1PDTACK;
+	
+	//PROCESSOR
+	
+	
+    synchronization initialization (id_t $id) label "init" ($id) {
+    	c."init" ($id);
+    }	
+	
+    
+    
+	
+	synchronization s_write_PL1DTREQ (addr_t $addr,type_t $type) {
+		chan_PL1DTREQ."write" ($addr, $type) ;
+		p."write_PL1DTREQ" ($addr, $type) ;
+	}
+
+	
+	synchronization s_read_L1PDTACK (addr_t $addr,type_t $type) {
+		p."read_L1PDTACK" ($addr, $type) ;
+		chan_L1PDTACK."read" ($addr, $type) ;
+	}
+		
+	
+	//CACHE_L1
+	synchronization s_read_PL1DTREQ_write_L1MCDTREQ (id_t $id, addr_t $addr, type_t $type1, type_t $type2) label
+	"c_write_L1MCDTREQ" ($id, $addr, $type2) {
+		chan_PL1DTREQ."read" ($addr, $type1) ; // DT_RD ou DT_WR
+		c."read_PL1DTREQ_write_L1MCDTREQ"($id, $addr, $type1, $type2);
+	}
+	
+	synchronization s_read_MCL1DTACK_write_L1PDTACK (id_t $id, addr_t $addr, type_t $type1, type_t $type2) label
+	"c_read_MCL1DTACK"($id, $addr, $type1){
+		c."read_MCL1DTACK_write_L1PDTACK"($id,$addr, $type1, $type2);
+		chan_L1PDTACK."write" ($addr, $type2) ; // ACK_DT_RD ou ACK_DT_WR
+	}
+	
+	synchronization s_read_PL1DTREQ_write_L1PDTACK (addr_t $addr, type_t $type1, type_t $type2)
+	 {
+		chan_PL1DTREQ."read" ($addr, $type1) ; // DT_RD ou DT_WR
+		c."read_PL1DTREQ_write_L1PDTACK"($addr, $type1, $type2);
+		chan_L1PDTACK."write" ($addr, $type2) ; // ACK_DT_RD ou ACK_DT_WR
+	}
+	
+	synchronization s_read_MCL1CPREQ_write_L1MCCPACK (id_t $id, addr_t $addr, type_t $type1, type_t $type2) label
+	"c_read_MCL1CPREQ_write_L1MCCPACK"($id, $addr, $type1, $type2) {
+		c."read_MCL1CPREQ_write_L1MCCPACK"($id,$addr, $type1, $type2);
+	}
+	
+	synchronization s_read_PL1DTREQ_write_L1MCCPACK (id_t $id, addr_t $addr1, addr_t $addr2, type_t $type1, type_t $type2) label 
+	"c_write_L1MCCPACK"($id, $addr2, $type2)  {
+		chan_PL1DTREQ."read" ($addr1, $type1) ; // DT_RD ou DT_WR 
+		c."read_PL1DTREQ_write_L1MCCPACK"($id,$addr1, $addr2, $type1, $type2);
+	}
+	
+	synchronization s_read_MCL1CPREQ (id_t $id, addr_t $addr, type_t $type) label 
+	"c_read_MCL1CPREQ"($id, $addr, $type)  {
+		c."read_MCL1CPREQ"($id,$addr, $type);
+	}
+	
+	synchronization s_read_MCL1CLACK (id_t $id, addr_t $addr, type_t $type) label 
+	"c_read_MCL1CLACK"($id, $addr, $type)  {
+		c."read_MCL1CLACK"($id,$addr, $type);
+	}
+	
+	synchronization s_write_L1MCCPACK (id_t $id, addr_t $addr, type_t $type) label 
+	"c_write_L1MCCPACK" ($id, $addr, $type){
+		c."write_L1MCCPACK"($id,$addr, $type);
+	}
+	
+	synchronization s_write_L1MCDTREQ (id_t $id, addr_t $addr, type_t $type) label 
+	"c_write_L1MCDTREQ"($id, $addr, $type) {
+		c."write_L1MCDTREQ"($id,$addr, $type);
+	}
+	
+	synchronization s_read_MCL1DTACK (id_t $id, addr_t $addr, type_t $type) label 
+	"c_read_MCL1DTACK"($id, $addr, $type) {
+		c."read_MCL1DTACK" ($id,$addr, $type);
+	}
+}
+
+
+
+
+//tester EMPTY -> MISS -> MISS_M_UP -> MISS_CLNUP -> MISS_RETRY -> MISS_RETRY_RD -> MISS
+gal Tester {
+	int state = 0 ;
+	transition t0 [state == 0] label "state_0" {
+		state = 1 ;
+	}
+	transition t1 [state == 1] label "state_1" {
+		state = 2 ;
+	}
+	transition t2 [state == 2] label "state_2" {
+		state = 3 ;
+	}
+	transition t3 [state == 3] label "state_3" {
+		state = 4 ;
+	}
+	transition t4 [state == 4] label "state_4" {
+		state = 5 ;
+	}
+	transition t5 [state == 5] label "state_5" {
+		state = 6 ;
+	}
+	transition t6 [state == 6] label "state_6" {
+		state = 7 ;
+	}
+	transition t7 [state == 7] label "state_7" {
+		state = 8 ;
+	}
+	transition t8 [state == 8] label "state_8" {
+		state = 9 ;
+	}
+	transition t9 [state == 9] label "state_9" {
+		state = 10 ;
+	}
+	transition t10 [state == 10] label "state_10" {
+		state = 11 ;
+	}
+	transition t11 [state == 11] label "state_11" {
+		state = 12 ;
+	}
+}
+
+
+composite top {
+	
+	ProcessorCacheL1 [3] cl1 ;
+	CacheL1 l1;
+	
+    //cl1[0].c.id = 0;
+    //cl1[1].c.id = 1;
+    //cl1[2].c.id = 2;
+    
+    
+	synchronization init label "" {
+		for ($id : id_t) {
+			//cl1[$id]."init_id" ($id);
+		}
+	}
+
+
+}
+
+main top ;
+
+
+
+//property p1 [reachable] :( cl1[0] : p: state == $PROC_WAIT_READ || cl1[0]: p: state == $PROC_WAIT_WRITE) 
+//                      && ( cl1[1] : p: state == $PROC_WAIT_READ || cl1[1]: p: state == $PROC_WAIT_WRITE) 
+//                      && ( cl1[2] : p: state == $PROC_WAIT_READ || cl1[2]: p: state == $PROC_WAIT_WRITE);
+//
+//property p2[reachable] : l1: v_addr == 0;property p1 (id_t $id) [reachable] :  cl1[$id] : p : state == $PROC_WAIT_READ ||   cl1[$id] : p : state == $PROC_WAIT_WRITE ;
+//E ;

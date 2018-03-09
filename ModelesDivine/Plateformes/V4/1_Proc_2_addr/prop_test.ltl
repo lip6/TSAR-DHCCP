@@ -1,0 +1,2 @@
+G(("chan_PL1DTREQ_full = 1" && "chan_PL1DTREQ_type = 0") -> F((("Mem_cache0.valid_multicast") && ("n_cache0 = 1")) || (("Mem_cache1.valid_multicast") && ("n_cache1 = 1"))))
+

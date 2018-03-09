@@ -1,0 +1,1261 @@
+$PRO_READY = 0 ;
+$PRO_WAIT_RD = 1 ;
+$PRO_WAIT_WR = 2 ;
+$L1_EMPTY = 3 ;
+$L1_MISS = 4 ;
+$L1_MISS_WAIT = 5 ;
+$L1_MISS_RETRY = 6 ;
+$L1_MISS_CLNUP = 7 ;
+$L1_VALID_DATA = 8 ;
+$L1_WRITE_WAIT_VALID = 9 ;
+$L1_WRITE_WAIT_EMPTY = 10 ;
+$L1_MISS_M_UP = 11 ;
+$L1_MISS_TO_RETRY = 12 ;
+$L1_ZOMBIE = 13 ;
+$L1_WRITE_WAIT_CLACK = 14 ;
+$L1_WRITE_WAIT_CLACK2 = 15 ;
+$L1_MISS_RETRY_RD = 16 ;
+$MC_EMPTY = 17 ;
+$MC_READ_WAIT = 18 ;
+$MC_GET_WRITE_WAIT = 19 ;
+$MC_WRITE_WAIT = 20 ;
+$MC_VALID_MULTICAST = 21 ;
+$MC_VALID_MULTICAST_CLNUP = 22 ;
+$MC_VALID_BROADCAST = 23 ;
+$MC_VALID_MULTICAST_UPDATE = 24 ;
+$MC_VALID_BROADCAST_INV = 25 ;
+$MC_UPDATE_WAIT = 26 ;
+$MC_UPDATE_WAIT_CLNUP = 27 ;
+$MC_BROADCAST_INV_WAIT = 28 ;
+$MC_BROADCAST_INV_PUT = 29 ;
+$MC_PUT_WAIT = 30 ;
+$MC_VALID_BROADCAST_INIT = 31 ;
+$MC_VALID_MULTICAST_READ = 32 ;
+$MC_VALID_MULTICAST_UPDATE_CLNUP = 33 ;
+$MEM_READY = 34 ;
+$CACHEEMPTY = 1 ;
+$NBMEM = 2 ;
+$CACHE_TH = 2 ;
+$NB_CACHES = 3 ;
+typedef addr_t = 0 .. $NBMEM - 1 ;
+typedef type_t = 0 .. 19 ;
+typedef id_t = 0 .. $NB_CACHES - 1 ;
+typedef dirty_t = 0 .. 1 ;
+typedef copie_t = 0 .. $NB_CACHES ;
+typedef cpt_t = 0 .. $CACHE_TH ;
+typedef valid_t = 0 .. 1 ;
+
+
+gal variable {
+	int error = 0 ;
+
+	transition write_error (addr_t $addr) [true] label "write_error" ($addr) {
+		error = $addr ;
+	}
+	transition read_error (addr_t $addr) [error == $addr] label "read_error" ($addr) {
+	}
+}
+
+//gal Processeur ($id=0){
+gal Processeur {
+	int state = $PRO_READY ;
+	int addr = 0 ;
+
+	//int myid = $id;
+	//    
+	//    transition transitionName [myid < 3] {
+	//    	myid +=1;
+	//    }
+
+	transition write (addr_t $addr) [true] label "write" ($addr) {
+		addr = $addr ;
+	}
+	transition read (addr_t $addr) [addr == $addr] label "read" ($addr) {
+		addr = 0 ;
+	}
+	transition t_Ready_WaitRD [state == $PRO_READY] label "Ready_WaitRD" {
+		state = $PRO_WAIT_RD ;
+	}
+	transition t_Ready_WaitWR [state == $PRO_READY] label "Ready_WaitWR" {
+		state = $PRO_WAIT_WR ;
+	}
+	transition t_WaitRD_Ready [state == $PRO_WAIT_RD] label "WaitRD_Ready" {
+		state = $PRO_READY ;
+	}
+	transition t_WaitWR_Ready [state == $PRO_WAIT_WR] label "WaitWR_Ready" {
+		state = $PRO_READY ;
+	}
+}
+gal CacheL1 {
+	int state = $L1_EMPTY ;
+	int v_addr = 0 ;
+	int addr_save = 0 ;
+	int v_cache_valid = 0 ;
+
+	// addr_save
+
+	transition write_save (addr_t $addr) [true] label "write_save" ($addr) {
+		addr_save = $addr ;
+	}
+	transition t_addr_save (addr_t $addr) [true] label "addr_save" ($addr) {
+		addr_save = $addr ;
+	}
+	transition t_check_addr_save (addr_t $addr) [addr_save == $addr] label "check_addr_save" ($addr) {
+		addr_save = 0 ;
+	}
+	transition read_save (addr_t $addr) [true] label "read_save" ($addr) {
+		addr_save = $addr ;
+	}
+	transition read_save1 (addr_t $addr) [addr_save == $addr] label "read_save1" ($addr) {
+	} // same addr
+
+	transition read_save2 (addr_t $addr) [addr_save != $addr] label "read_save2" ($addr) {
+	} // diff addr
+
+	//v_addr
+
+	transition write_v (addr_t $addr) [true] label "write_v" ($addr) {
+		v_addr = $addr ;
+	}
+	transition read_v1 (addr_t $addr) [v_addr == $addr] label "read_v1" ($addr) {
+	}
+	transition read_v2 (addr_t $addr) [v_addr != $addr] label "read_v2" ($addr) {
+	}
+
+	//v_cache_valid
+
+	transition write_v_cache_valid (addr_t $addr) [true] label "write_v_cache_valid" ($addr) {
+		v_cache_valid = $addr ;
+	}
+
+	//to self
+
+	transition t_Empty_Empty [state == $L1_EMPTY] label "Empty_Empty" {
+		state = $L1_EMPTY ;
+	}
+	transition t_Empty_Miss [state == $L1_MISS] label "Empty_Miss" {
+		state = $L1_MISS ;
+	}
+	transition t_Empty_WriteWaitEmpty [state == $L1_EMPTY] label "Empty_WriteWaitEmpty" {
+		state = $L1_WRITE_WAIT_EMPTY ;
+	}
+
+	//to self
+
+	transition t_WriteWaitEmpty_WriteWaitEmpty [state == $L1_WRITE_WAIT_EMPTY] label "WriteWaitEmpty_WriteWaitEmpty" {
+		state = $L1_WRITE_WAIT_EMPTY ;
+	}
+	transition t_WriteWaitEmpty_Empty [state == $L1_WRITE_WAIT_EMPTY] label "WriteWaitEmpty_Empty" {
+		state = $L1_EMPTY ;
+	}
+	transition t_Miss_MissMUP [state == $L1_MISS] label "Miss_MissMUP" {
+		state = $L1_MISS_M_UP ;
+	}
+
+	//to self
+
+	transition t_MissMUP_MissMUP [state == $L1_MISS_M_UP] label "MissMUP_MissMUP" {
+		state = $L1_MISS_M_UP ;
+	}
+	transition t_Miss_MissToRetry [state == $L1_MISS] label "Miss_MissToRetry" {
+		state = $L1_MISS_TO_RETRY ;
+	}
+
+	//to self
+
+	transition t_Miss_Miss [state == $L1_MISS] label "Miss_Miss" {
+		state = $L1_MISS ;
+	}
+	//to self
+
+	transition t_MissToRetry_MissToRetry [state == $L1_MISS_TO_RETRY] label "MissToRetry_MissToRetry" {
+		state = $L1_MISS_TO_RETRY ;
+	}
+	transition t_MissToRetry_MissClnup [state == $L1_MISS_TO_RETRY] label "MissToRetry_MissClnup" {
+		state = $L1_MISS_CLNUP ;
+	}
+
+	//to self
+
+	transition t_MissRetry_MissRetry [state == $L1_MISS_RETRY] label "MissRetry_MissRetry" {
+		state = $L1_MISS_RETRY ;
+	}
+	transition t_MissRetry_MissRetryRD [state == $L1_MISS_RETRY] label "MissRetry_MissRetryRD" {
+		state = $L1_MISS_RETRY_RD ;
+	}
+	transition t_MissRetryRD_Miss [state == $L1_MISS_RETRY_RD] label "MissRetryRD_Miss" {
+		state = $L1_MISS ;
+	}
+	//to self
+
+	transition t_MissRetryRD_MissRetryRD [state == $L1_MISS_RETRY_RD] label "MissRetryRD_MissRetryRD" {
+		state = $L1_MISS_RETRY_RD ;
+	}
+	transition t_Miss_ValidData [state == $L1_MISS] label "Miss_ValidData" {
+		state = $L1_VALID_DATA ;
+	}
+	//to self
+
+	transition t_ValidData_ValidData [state == $L1_VALID_DATA] label "ValidData_ValidData" {
+		state = $L1_VALID_DATA ;
+	}
+	transition t_ValidData_Zombie [state == $L1_VALID_DATA] label "ValidData_Zombie" {
+		state = $L1_ZOMBIE ;
+	}
+
+	//to self
+
+	transition t_Zombie_Zombie [state == $L1_ZOMBIE] label "Zombie_Zombie" {
+		state = $L1_ZOMBIE ;
+	}
+	transition t_Zombie_Empty [state == $L1_ZOMBIE] label "Zombie_Empty" {
+		state = $L1_EMPTY ;
+	}
+	transition t_ValidData_MissWait [state == $L1_VALID_DATA] label "ValidData_MissWait" {
+		state = $L1_MISS_WAIT ;
+	}
+	//to self
+
+	transition t_MissWait_MissWait [state == $L1_MISS_WAIT] label "MissWait_MissWait" {
+		state = $L1_MISS_WAIT ;
+	}
+	transition t_MissWait_MissRetryRD [state == $L1_MISS_RETRY_RD] label "MissWait_MissRetryRD" {
+		state = $L1_MISS_RETRY_RD ;
+	}
+	transition t_MissMUP_MissClnup [state == $L1_MISS_M_UP] label "MissMUP_MissClnup" {
+		state = $L1_MISS_CLNUP ;
+	}
+	transition t_MissClnup_MissRetry [state == $L1_MISS_CLNUP] label "MissClnup_MissRetry" {
+		state = $L1_MISS_RETRY ;
+	}
+	//to self
+
+	transition t_MissClnup_MissClnup [state == $L1_MISS_CLNUP] label "MissClnup_MissClnup" {
+		state = $L1_MISS_CLNUP ;
+	}
+	transition t_ValidData_WriteWaitVaild [state == $L1_VALID_DATA] label "ValidData_WriteWaitValid" {
+		state = $L1_WRITE_WAIT_VALID ;
+	}
+
+	//to self
+
+	transition t_WriteWaitValid_WriteWaitValid [state == $L1_WRITE_WAIT_VALID] label "WriteWaitValid_WriteWaitValid" {
+		state = $L1_WRITE_WAIT_VALID ;
+	}
+	transition t_WriteWaitValid_WriteWaitClack [state == $L1_WRITE_WAIT_VALID] label "WriteWaitValid_WriteWaitClack" {
+		state = $L1_WRITE_WAIT_CLACK ;
+	}
+	transition t_WriteWaitValid_ValidData [state == $L1_WRITE_WAIT_VALID] label "WriteWaitValid_ValidData" {
+		state = $L1_VALID_DATA ;
+	}
+	transition t_WriteWaitClack_WriteWaitEmpty [state == $L1_WRITE_WAIT_CLACK] label "WriteWaitClack_WriteWaitEmpty" {
+		state = $L1_WRITE_WAIT_EMPTY ;
+	}
+	transition t_WriteWaitClack_WriteWaitClack2 [state == $L1_WRITE_WAIT_CLACK] label "WriteWaitClack_WriteWaitClack2" {
+		state = $L1_WRITE_WAIT_CLACK2 ;
+	}
+	//to self
+
+	transition t_WriteWaitClack_WriteWaitClack [state == $L1_WRITE_WAIT_CLACK] label "WriteWaitClack_WriteWaitClack" {
+		state = $L1_WRITE_WAIT_CLACK ;
+	}
+	transition t_WriteWaitClack2_Empty [state == $L1_WRITE_WAIT_CLACK2] label "WriteWaitClack2_Empty" {
+		state = $L1_EMPTY ;
+	}
+	//to self
+
+	transition t_WriteWaitClack2_WriteWaitClack2 [state == $L1_WRITE_WAIT_CLACK2] label
+	"WriteWaitClack2_WriteWaitClack2" {
+		state = $L1_WRITE_WAIT_CLACK2 ;
+	}
+}
+gal Mem_cache {
+	int state = $MC_EMPTY ;
+	int src_save = 0 ;
+	int ligne_addr = 0 ; // doit être 0 pour le mem_cache_0, 1 pour le mem_cache_1
+
+	int n_copies = 0 ;
+	int dirty = 0 ;
+	int cpt = 0 ;
+	int cpt_clnup = 0 ;
+	int rsp_cpt = 0 ;
+	int src_save_clnup = 0 ;
+
+	//	array [$CACHE_TH]c_id =(0,0);
+	//	array [$CACHE_TH]v_c_id =(0,0);
+	//	
+	
+	array [2] c_id = (0, 0) ;
+	array [2] v_c_id = (0, 0) ;
+
+	//ligne_addr
+
+	transition read_ligne_addr (addr_t $addr) [ligne_addr == $addr] label "read_ligne_addr" ($addr) {
+	}
+
+	//src_save
+
+	transition write_src_save (id_t $id) [true] label "write_src_save" ($id) {
+		src_save = $id ;
+	}
+	transition read_src_save (id_t $id) [src_save == $id] label "read_src_save" ($id) {
+	}
+
+	//dirty
+
+	transition write_dirty (dirty_t $dirty) [true] label "write_dirty" ($dirty) {
+		dirty = $dirty ;
+	}
+
+	//n_copies :domaine :NB_CACHES
+
+	transition write_n_copies (copie_t $copie) [true] label "write_n_copies" ($copie) {
+		n_copies = $copie ;
+	}
+	transition check_n_copies_less_than_CACHE_TH [n_copies < $CACHE_TH] label "check_n_copies_less_than_CACHE_TH" {
+	}
+	transition check_n_copies_more_than_CACHE_TH [n_copies >= $CACHE_TH] label "check_n_copies_more_than_CACHE_TH" {
+	}
+	transition check_n_copies_not_empty[n_copies > 0] label "check_n_copies_not_empty"{
+		
+	}
+	transition check_n_copies_empty[n_copies == 0] label "check_n_copies_empty"{
+		
+	}
+	
+	transition addition_n_copies [true] label "addition_n_copies" {
+		n_copies = n_copies + 1 ;
+	}
+    transition substraction_n_copies [true] label "substraction_n_copies" {
+		n_copies = n_copies - 1 ;
+	}
+    
+	//cpt
+
+	transition check_cpt_less_than_CACHE_TH [cpt < $CACHE_TH] label "check_cpt_less_than_CACHE_TH" {
+	}
+	transition chech_cpt_equel_to_CACHE_TH [cpt == $CACHE_TH] label "check_cpt_equel_to_CACHE_TH" {
+	}
+	transition addition_cpt (cpt_t $cpt) [state == $VALID_MULTICAST_CLNUP && v_c_id[$cpt] == 0] label "addition_cpt" {
+		cpt = cpt + 1 ;
+	}
+	transition write_cpt (cpt_t $cpt) [true] label "write_cpt" ($cpt) {
+		cpt = $cpt ;
+	}
+	transition read_cpt (cpt_t $cpt) [ $cpt == cpt ]label "read_cpt"($cpt){
+		
+	} 
+
+	//[$CACHE_TH]v_c_id 
+
+	transition write_v_c_id (cpt_t $cpt, valid_t $valid) [true] label "write_v_c_id" ($cpt, $valid) {
+		v_c_id [$cpt] = $valid ;
+	}
+	transition check_v_c_id (cpt_t $cpt, valid_t $valid) [v_c_id [$cpt] == $valid] label "check_v_c_id" ($cpt, $valid) {
+	}
+
+	//[$CACHE_TH]c_id 
+
+	transition write_c_id (cpt_t $cpt, id_t $id) [true] label "write_c_id" ($cpt, $id) {
+		c_id [$cpt] = $id ;
+	}
+	transition check_c_id_unequal (cpt_t $cpt, id_t $id) [c_id [$cpt] != $id] label "check_c_id_unequal" ($cpt, $id) {
+	}
+	transition check_c_id_equal (cpt_t $cpt, id_t $id) [c_id [$cpt] == $id] label "check_c_id_equal" ($cpt, $id) {
+	}
+	//rsp_cpt
+	
+	transition addition_rsp_cpt [true] label "addition_rsp_cpt" {
+		rsp_cpt = rsp_cpt + 1 ;
+	}
+	transition substraction_rsp_cpt [true] label "substraction_rsp_cpt" {
+		rsp_cpt = rsp_cpt - 1 ;
+	}
+	transition check_rsp_cpt_not_empty[n_copies > 0] label "check_rsp_cpt_not_empty"{
+		
+	}
+	//src_save_clnup
+	transition write_src_save_clnup ( id_t $id) [true] label "write_src_save_clnup" ( $id) {
+		src_save_clnup = $id ;
+	}
+	transition read_src_save_clnup (id_t $id) [src_save_clnup == $id] label "read_src_save_clnup"($id){
+		
+	}
+	//cpt_clnup
+	transition check_cpt_clnup_equel_to_CACHE_TH [cpt_clnup == $CACHE_TH ]label "check_cpt_clnup_equel_to_CACHE_TH" {
+		
+	}
+	transition check_cpt_clnup_less_than_CACHE_TH [cpt_clnup < $CACHE_TH ]label "check_cpt_clnup_less_than_CACHE_TH" {
+		
+	}
+	transition read_cpt_clnup (cpt_t $cpt) [cpt_clnup == $cpt] label "read_cpt_clnup"($cpt){
+		
+	}
+	transition write_cpt_clnup ( cpt_t $cpt) [true] label "write_cpt_clnup" ( $cpt) {
+		cpt_clnup = $cpt ;
+	}
+	transition addition_cpt_clnup [true] label "addition_cpt_clnup" {
+		cpt_clnup = cpt_clnup + 1 ;
+	}
+	
+	
+	transition t_Empty_ReadWait [state == $MC_EMPTY] label "Empty_ReadWait" {
+		state = $MC_READ_WAIT ;
+	}
+	transition t_Empty_GetWriteWait [state == $MC_EMPTY] label "Empty_GetWriteWait" {
+		state = $MC_GET_WRITE_WAIT ;
+	}
+	transition t_GetWriteWait_WriteWait [state == $MC_GET_WRITE_WAIT] label "GetWriteWait_WriteWait" {
+		state = $MC_WRITE_WAIT ;
+	}
+	transition t_WriteWait_ValidMulticast [state == $MC_WRITE_WAIT] label "WriteWait_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+
+	//to self
+
+	transition t_ReadWait_ReadWait [state == $MC_READ_WAIT] label "ReadWait_ReadWait" {
+		state = $MC_READ_WAIT ;
+	}
+	transition t_ReadWait_ValidMulticast [state == $MC_READ_WAIT] label "ReadWait_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+	transition t_ValidMulticast_ValidMulticastRead [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidMulticastRead" {
+		state = $MC_VALID_MULTICAST_READ ;
+	}
+	//to self
+
+	transition t_ValidMulticastRead_ValidMulticastRead [state == $MC_VALID_MULTICAST_READ] label
+	"ValidMulticastRead_ValidMulticastRead" {
+		state = $MC_VALID_MULTICAST_READ ;
+	}
+	transition t_ValidMulticastRead_ValidMulticast [state == $MC_VALID_MULTICAST_READ] label
+	"ValidMulticastRead_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+	transition t_ValidMulticast_ValidBroadcastInit [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidBroadcastInit" {
+		state = $MC_VALID_BROADCAST_INIT ;
+	}
+
+	//to self
+
+	transition t_ValidBroadcastInit_ValidBroadcastInit [state == $MC_VALID_BROADCAST_INIT] label
+	"ValidBroadcastInit_ValidBroadcastInit" {
+		state = $MC_VALID_BROADCAST_INIT ;
+	}
+	transition t_ValidBroadcastInit_ValidBroadcast [state == $MC_VALID_BROADCAST_INIT] label
+	"ValidBroadcastInit_ValidBroadcast" {
+		state = $MC_VALID_BROADCAST ;
+	}
+	transition t_ValidMulticast_ValidMulticastUpdate [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidMulticastUpdate" {
+		state = $MC_VALID_MULTICAST_UPDATE ;
+	}
+	//to self
+
+	transition t_ValidMulticast_ValidMulticast [state == $MC_VALID_MULTICAST] label "ValidMulticast_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+
+	//to self
+
+	transition t_ValidMulticastUpdate_ValidMulticastUpdate [state == $MC_VALID_MULTICAST_UPDATE] label
+	"ValidMulticastUpdate_ValidMulticastUpdate" {
+		state = $MC_VALID_MULTICAST_UPDATE ;
+	}
+	transition t_ValidMulticastUpdate_UpdateWait [state == $MC_VALID_MULTICAST_UPDATE] label "ValidMulticastUpdate_UpdateWait" {
+		state = $MC_UPDATE_WAIT ;
+	}
+	transition t_ValidMulticastUpdate_ValidMulticastUpdateClnup [state == $MC_VALID_MULTICAST_UPDATE] label
+	"ValidMulticastUpdate_ValidMulticastUpdateClnup" {
+		state = $MC_VALID_MULTICAST_UPDATE_CLNUP ;
+	}
+	transition t_ValidMulticastUpdateClnup_ValidMulticastUpdate [state == $MC_VALID_MULTICAST_UPDATE_CLNUP] label
+	"ValidMulticastUpdateClnup_ValidMulticastUpdate" {
+		state = $MC_VALID_MULTICAST_UPDATE ;
+	}
+
+	//to self
+
+	transition t_ValidMulticastUpdateClnup_ValidMulticastUpdateClnup [state == $MC_VALID_MULTICAST_UPDATE_CLNUP] label
+	"ValidMulticastUpdateClnup_ValidMulticastUpdateClnup" {
+		state = $MC_VALID_MULTICAST_UPDATE_CLNUP ;
+	}
+	transition t_ValidMulticast_ValidMulticastClnup [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidMulticastClnup" {
+		state = $MC_VALID_MULTICAST_CLNUP ;
+	}
+	transition t_ValidMulticastClnup_ValidMulticast [state == $MC_VALID_MULTICAST_CLNUP] label
+	"ValidMulticastClnup_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+	//to self
+
+	transition t_ValidMulticastClnup_ValidMulticastClnup [state == $MC_VALID_MULTICAST_CLNUP] label
+	"ValidMulticastClnup_ValidMulticastClnup" {
+		state = $MC_VALID_MULTICAST_CLNUP ;
+	}
+	//to self
+
+	transition t_UpdateWait_UpdateWait [state == $MC_UPDATE_WAIT] label "UpdateWait_UpdateWait" {
+		state = $MC_UPDATE_WAIT ;
+	}
+	transition t_UpdateWait_UpdateWaitClnup [state == $MC_UPDATE_WAIT] label "UpdateWait_UpdateWaitClnup" {
+		state = $MC_UPDATE_WAIT_CLNUP ;
+	}
+	transition t_UpdateWaitClnup_UpdateWait [state == $MC_UPDATE_WAIT_CLNUP] label "UpdateWaitClnup_UpdateWait" {
+		state = $MC_UPDATE_WAIT ;
+	}
+	//to self
+
+	transition t_UpdateWaitClnup_UpdateWaitClnup [state == $MC_UPDATE_WAIT_CLNUP] label
+	"UpdateWaitClnup_UpdateWaitClnup" {
+		state = $MC_UPDATE_WAIT_CLNUP ;
+	}
+	transition t_UpdateWait_ValidMulticast [state == $MC_UPDATE_WAIT] label "UpdateWait_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+
+	//to self
+
+	transition t_ValidBroadcast_ValidBroadcast [state == $MC_VALID_BROADCAST] label "ValidBroadcast_ValidBroadcast" {
+		state = $MC_VALID_BROADCAST ;
+	}
+	transition t_ValidBroadcast_ValidBroadcastInv [state == $MC_VALID_BROADCAST] label
+	"ValidBroadcast_ValidBroadcastInv" {
+		state = $MC_VALID_BROADCAST_INV ;
+	}
+	transition t_ValidBroadcastInv_BroadcastInvWait [state == $MC_VALID_BROADCAST_INV] label
+	"ValidBroadcastInv_BroadcastInvWait" {
+		state = $MC_BROADCAST_INV_WAIT ;
+	}
+	//to self
+
+	transition t_ValidBroadcastInv_ValidBroadcastInv [state == $MC_VALID_BROADCAST_INV] label
+	"ValidBroadcastInv_ValidBroadcastInv" {
+		state = $MC_VALID_BROADCAST_INV ;
+	}
+	//to self
+
+	transition t_BroadcastInvWait_BroadcastInvWait [state == $MC_BROADCAST_INV_WAIT] label
+	"BroadcastInvWait_BroadcastInvWait" {
+		state = $MC_BROADCAST_INV_WAIT ;
+	}
+	transition t_BroadcastInvWait_BroadcastInvPut [state == $MC_BROADCAST_INV_WAIT] label
+	"BroadcastInvWait_BroadcastInvPut" {
+		state = $MC_BROADCAST_INV_PUT ;
+	}
+	transition t_BroadcastInvPut_PutWait [state == $MC_BROADCAST_INV_PUT] label "BroadcastInvPut_PutWait" {
+		state = $MC_PUT_WAIT ;
+	}
+	transition t_PutWait_Empty [state == $MC_PUT_WAIT] label "PutWait_Empty" {
+		state = $MC_EMPTY ;
+	}
+}
+gal Memory {
+	int state = $MEM_READY ;
+	transition t_Ready_Ready [state == $MEM_READY] label "Ready_Ready" {
+	//state = $CACHEEMPTY;
+		state = $MEM_READY ;
+		//state = $MEM_READY;
+
+	}
+}
+gal channelIdAddrType {
+	int isFull = 0 ;
+	int id = 0 ;
+	int addr = 0 ;
+	int type = 0 ;
+	transition read (id_t $id, addr_t $addr, type_t $rtype) [isFull == 1 && addr == $addr && type == $rtype && id == $id]
+	label "read" ($id, $addr, $rtype) {
+		isFull = 0 ;
+		addr = 0 ;
+		type = 0 ;
+		id = 0 ;
+	}
+
+	//	transition read_DiffAddr (id_t $id,addr_t $daddr, type_t $rtype) [ isFull==1 && addr != $daddr && type == $rtype && id == $id ] 
+	//	    label "read_DiffAddr"($id,$daddr,$rtype) {
+	//		isFull = 0;
+	//		addr = 0;
+	//		type = 0;
+	//		id = 0;
+	//	}	
+
+	transition write (id_t $id, addr_t $addr, type_t $wtype) [isFull == 0] label "write" ($id, $addr, $wtype) {
+		isFull = 1 ;
+		addr = $addr ;
+		type = $wtype ;
+		id = $id ;
+	}
+
+	//	transition reset ( id_t $id, addr_t $addr, type_t $wtype ) [ true ] 
+	//	    label "reset" ($id,$addr,$wtype) {
+	//		isFull = 1;
+	//		addr = $addr;
+	//		type = $wtype;
+	//		id = $id;
+	//	}
+
+}
+
+gal channelAddrType {
+	int isFull = 0 ;
+	int addr = 0 ;
+	int type = 0 ;
+	transition read (addr_t $addr, type_t $rtype) [isFull == 1 && addr == $addr && type == $rtype] label "read" ($addr,
+	$rtype) {
+		isFull = 0 ;
+		addr = 0 ;
+		type = 0 ;
+	}
+
+	//	transition read_DiffAddr (addr_t $daddr, type_t $rtype) [ isFull==1 && addr != $daddr && type == $rtype ] 
+	//	    label "read_DiffAddr"($daddr,$rtype) {
+	//		isFull = 0;
+	//		addr = 0;
+	//		type = 0;
+	//	}
+
+	transition write (addr_t $addr, type_t $wtype) [isFull == 0] label "write" ($addr, $wtype) {
+		isFull = 1 ;
+		addr = $addr ;
+		type = $wtype ;
+	}
+	transition reset [true] label "reset" {
+		isFull = 0 ;
+		addr = 0 ;
+		type = 0 ;
+	}
+}
+composite tsar {
+	variable v ;
+
+	//	Processeur p0($id=0);
+	//	Processeur p1($id=1);
+	//	Processeur p2($id=2);
+	Processeur p0 ;
+	//	Processeur p1;
+	//	Processeur p2;
+	CacheL1 c0 ;
+	//CacheL1 c1;
+	//CacheL1 c2;
+	Mem_cache mc0 ;
+	Mem_cache mc1 ;
+	Memory m0 ;
+
+	//channels between L1 and MC
+	channelIdAddrType chan_L1MCDTREQ ;
+	channelIdAddrType chan_MCL1DTACK ;
+	channelIdAddrType chan_MCL1CLACK ;
+	channelIdAddrType chan_MCL1CPREQ ;
+	channelIdAddrType chan_L1MCCPACK ;
+
+	//channels between MC and MEM	
+	channelAddrType chan_MCMEMDTREQ ;
+	channelAddrType chan_MEMMCDTACK ;
+
+	//channels between Processor and L1
+	channelAddrType chan_PL1DTREQ0 ;
+	channelAddrType chan_L1PDTACK0 ;
+
+	//    channelAddrType chan_PL1DTREQ1;
+	//    channelAddrType chan_L1PDTACK1;
+	//    
+	//    channelAddrType chan_PL1DTREQ2;
+	//    channelAddrType chan_L1PDTACK2;
+
+	//PRO
+	synchronization PRO_Ready_WaitRD (addr_t $addr) label "" {
+		p0."Ready_WaitRD" ;
+		p0."write" ($addr) ;
+		chan_PL1DTREQ0."write" ($addr, 0) ;
+	}
+	synchronization PRO_Ready_WaitWR (addr_t $addr) label "" {
+		p0."Ready_WaitWR" ;
+		p0."write" ($addr) ;
+		chan_PL1DTREQ0."write" ($addr, 1) ;
+	}
+	synchronization PRO_WaitRD_Ready (addr_t $addr) label "" {
+		p0."WaitRD_Ready" ;
+		p0."read" ($addr) ;
+		chan_L1PDTACK0."read" ($addr, 2) ;
+		chan_PL1DTREQ0."reset" ;
+	}
+	synchronization PRO_WaitWR_Ready (addr_t $addr) label "" {
+		p0."WaitWR_Ready" ;
+		p0."read" ($addr) ;
+		chan_L1PDTACK0."read" ($addr, 3) ;
+		chan_PL1DTREQ0."reset" ;
+	}
+
+	//L1
+	synchronization L1_Empty_Empty1 (id_t $id, addr_t $addr) label "" {
+		c0."Empty_Empty" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+
+	}
+	synchronization L1_Empty_Empty2 (id_t $id, addr_t $addr) label "" {
+		c0."Empty_Empty" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV
+
+	}
+	synchronization L1_Empty_Empty3 (id_t $id, addr_t $addr) label "" {
+		c0."Empty_Empty" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 12) ; // M_UP
+		chan_L1MCCPACK."write" ($id, $addr, 4) ; // ACK_M_UP	
+
+	}
+	synchronization L1_Empty_Miss (id_t $id, addr_t $addr) label "" {
+		c0."Empty_Miss" ;
+		chan_PL1DTREQ0."read" ($addr, 1) ; // DT_RD
+		c0."write_save" ($addr) ;
+		chan_L1MCDTREQ."write" ($id, $addr, 4) ; // RD	
+
+	}
+	synchronization L1_Empty_WriteWaitEmpty (id_t $id, addr_t $addr) label "" {
+		c0."Empty_WriteWaitEmpty" ;
+		chan_PL1DTREQ0."read" ($addr, 1) ; // DT_WR
+		c0."write_save" ($addr) ;
+		chan_L1MCDTREQ."write" ($id, $addr, 4) ; // WR	
+
+	}
+	synchronization L1_WriteWaitEmpty_WriteWaitEmpty1 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitEmpty_WriteWaitEmpty" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+
+	}
+	synchronization L1_WriteWaitEmpty_WriteWaitEmpty2 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitEmpty_WriteWaitEmpty" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV
+
+	}
+	synchronization L1_WriteWaitEmpty_Empty (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitEmpty_Empty" ;
+		c0."read_save" ($addr) ;
+		chan_MCL1DTACK."read" ($id, $addr, 7) ; // ACK_WR
+		chan_L1PDTACK0."write" ($addr, 3) ; // ACK_DT_WR
+
+	}
+	synchronization L1_WriteWaitEmpty_WriteWaitEmpty3 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitEmpty_WriteWaitEmpty" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 12) ; // M_UP
+		chan_L1MCCPACK."write" ($id, $addr, 15) ; // ACK_M_UP
+
+	}
+	synchronization L1_Miss_MissMUP (id_t $id, addr_t $addr) label "" {
+		c0."Miss_MissMUP" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 12) ; // M_UP
+		chan_L1MCCPACK."write" ($id, $addr, 15) ; // ACK_M_UP
+
+	}
+	synchronization L1_MissMUP_MissMUP1 (id_t $id, addr_t $addr) label "" {
+		c0."MissMUP_MissMUP" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+
+	}
+	synchronization L1_MissMUP_MissMUP2 (id_t $id, addr_t $addr) label "" {
+		c0."MissMUP_MissMUP" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV
+
+	}
+	synchronization L1_Miss_MissToRetry1 (id_t $id, addr_t $addr) label "" {
+		c0."Miss_MissToRetry" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV 
+		//chan_MCL1CPREQ_addr == addr_save
+		c0."read_save1" ($addr) ; // sur la même adresse
+
+	}
+	synchronization L1_Miss_MissToRetry2 (id_t $id, addr_t $addr) label "" {
+		c0."Miss_MissToRetry" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV
+		c0."read_save1" ($addr) ; //sur la même adresse
+
+	}
+	synchronization L1_Miss_Miss1 (id_t $id, addr_t $addr) label "" {
+		c0."Miss_Miss" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+		//chan_MCL1CPREQ_addr != addr_save
+		c0."read_save2" ($addr) ; //sur une autre adresse
+
+	}
+	synchronization L1_Miss_Miss2 (id_t $id, addr_t $addr) label "" {
+		c0."Miss_Miss" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV
+		//chan_MCL1CPREQ_addr != addr_save
+		c0."read_save2" ($addr) ; //sur une autre adresse
+
+	}
+	synchronization L1_MissToRetry_MissToRetry (id_t $id, addr_t $addr) label "" {
+		c0."MissToRetry_MissToRetry" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV 
+
+	}
+	synchronization L1_MissToRetry_MissClnup (id_t $id, addr_t $addr) label "" {
+		c0."MissToRetry_MissClnup" ;
+		chan_MCL1DTACK."read" ($id, $addr, 6) ; // ACK_RD
+		c0."read_save1" ($addr) ;
+	}
+	synchronization L1_MissRetry_MissRetry (id_t $id, addr_t $addr) label "" {
+		c0."MissRetry_MissRetry" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV 
+
+	}
+	synchronization L1_MissRetry_MissRetryRD (id_t $id, addr_t $addr) label "" {
+		c0."MissRetry_MissRetryRD" ;
+		chan_MCL1CLACK."read" ($id, $addr, 9) ; // CLACK	
+
+	}
+	synchronization L1_MissRetryRD_Miss (id_t $id, addr_t $addr) label "" {
+		c0."MissRetryRD_Miss" ;
+		c0."read_save1" ($addr) ;
+		chan_L1MCDTREQ."write" ($id, $addr, 4) ; // RD	
+		//chan_L1MCDTREQ_addr = addr_save;
+
+	}
+	synchronization L1_MissRetryRD_MissRetryRD1 (id_t $id, addr_t $addr) label "" {
+		c0."MissRetryRD_MissRetryRD" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV	
+
+	}
+	synchronization L1_MissRetryRD_MissRetryRD2 (id_t $id, addr_t $addr) label "" {
+		c0."MissRetryRD_MissRetryRD" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 12) ; // M_UP
+		chan_L1MCCPACK."write" ($id, $addr, 15) ; // ACK_M_UP
+
+	}
+
+	//330	
+	synchronization L1_Miss_ValidData (id_t $id, addr_t $addr) label "" {
+		c0."Miss_ValidData" ;
+		chan_MCL1DTACK."read" ($id, $addr, 6) ; // ACK_RD
+		c0."read_save" ($addr) ;
+		chan_L1PDTACK0."write" ($addr, 2) ; // ACK_DT_RD
+		c0."write_v" ($addr) ;
+		c0."write_v_cache_valid" (1) ;
+		//v_cache_valid_0 = 1,  addr_cache_0 = v_addr, 
+
+	}
+	synchronization L1_ValidData_ValidData1 (addr_t $addr) label "" {
+		c0."ValidData_ValidData" ;
+		c0."read_v1" ($addr) ;
+		chan_PL1DTREQ0."read" ($addr, 0) ; // DT_RD
+		chan_L1PDTACK0."write" ($addr, 2) ; // ACK_DT_RD
+
+	}
+	synchronization L1_ValidData_ValidData2 (id_t $id, addr_t $addr) label "" {
+		c0."ValidData_ValidData" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 12) ; // M_UP
+		chan_L1MCCPACK."write" ($id, $addr, 15) ; // ACK_M_UP	
+
+	}
+	synchronization L1_ValidData_ValidData3 (id_t $id, addr_t $addr) label "" {
+		c0."ValidData_ValidData" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV sur une adresse différente 
+		c0."read_v2" ($addr) ;
+	}
+	synchronization L1_ValidData_ValidData4 (id_t $id, addr_t $addr) label "" {
+		c0."ValidData_ValidData" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV sur une adresse différente 
+		c0."read_v2" ($addr) ;
+	}
+	synchronization L1_ValidData_Zombie1 (id_t $id, addr_t $addr) label "" {
+		c0."ValidData_Zombie" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV sur la même adresse 
+		c0."read_v1" ($addr) ;
+		c0."write_v" (0) ;
+		chan_L1MCCPACK."write" ($id, $addr, 8) ; // CLNUP
+		c0."write_v_cache_valid" (0) ;
+	}
+	synchronization L1_ValidData_Zombie2 (id_t $id, addr_t $addr) label "" {
+		c0."ValidData_Zombie" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV sur la même adresse 
+		c0."read_v1" ($addr) ;
+		c0."write_v" (0) ;
+		chan_L1MCCPACK."write" ($id, $addr, 8) ; // CLNUP
+		c0."write_v_cache_valid" (0) ;
+	}
+	synchronization L1_Zombie_Zombie (id_t $id, addr_t $addr) label "" {
+		c0."Zombie_Zombie" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV 
+
+	}
+	synchronization L1_Zombie_Empty (id_t $id, addr_t $addr) label "" {
+		c0."Zombie_Empty" ;
+		chan_MCL1CLACK."read" ($id, $addr, 9) ; // CLACK
+
+	}
+	//365	
+	synchronization L1_ValidData_MissWait (id_t $id, addr_t $addr) label "" {
+		c0."ValidData_MissWait" ;
+		chan_PL1DTREQ0."read" ($addr, 0) ; // DT_RD
+		c0."read_v2" ($addr) ; // adresse différente  chan_PL1DTREQ0_addr != v_addr
+		c0."write_save" ($addr) ;
+		chan_L1MCCPACK."write" ($id, $addr, 8) ;
+		//addr_save = chan_PL1DTREQ0_addr, chan_L1MCCPACK_addr = v_addr
+
+	}
+	synchronization L1_MissWait_MissWait (id_t $id, addr_t $addr) label "" {
+		c0."MissWait_MissWait" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+
+	}
+	synchronization L1_MissWait_MissRetryRD (id_t $id, addr_t $addr) label "" {
+		c0."MissWait_MissRetryRD" ;
+		chan_MCL1CLACK."read" ($id, $addr, 9) ; // CLACK
+
+	}
+	synchronization L1_MissMUP_MissClnup (id_t $id, addr_t $addr) label "" {
+		c0."MissMUP_MissClnup" ;
+		chan_MCL1DTACK."read" ($id, $addr, 6) ; // ACK_RD
+
+	}
+	synchronization L1_MissClnup_MissRetry (id_t $id, addr_t $addr) label "" {
+		c0."MissClnup_MissRetry" ;
+		chan_L1MCCPACK."write" ($id, $addr, 9) ; // CLNUP
+
+	}
+	synchronization L1_MissClnup_MissClnup (id_t $id, addr_t $addr) label "" {
+		c0."MissClnup_MissClnup" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+
+	}
+	synchronization L1_ValidData_WriteWaitValid (id_t $id, addr_t $addr) label "" {
+		c0."ValidData_WriteWaitValid" ;
+		chan_PL1DTREQ0."read" ($addr, 1) ; // DT_WR
+		c0."write_save" ($addr) ;
+		chan_L1MCDTREQ."write" ($id, $addr, 5) ; // WR
+
+	}
+	synchronization L1_WriteWaitValid_WriteWaitValid1 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitValid_WriteWaitValid" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+		c0."read_v2" ($addr) ; // sur une autre adresse
+
+	}
+	synchronization L1_WriteWaitValid_WriteWaitValid2 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitValid_WriteWaitValid" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV
+		c0."read_v2" ($addr) ; // sur une autre adresse
+
+	}
+	synchronization L1_WriteWaitValid_WriteWaitClack1 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitValid_WriteWaitClack" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+		c0."read_v1" ($addr) ; // sur la même adresse
+		c0."write_v" (0) ;
+		chan_L1MCCPACK."write" ($id, $addr, 8) ; // CLNUP
+		c0."write_v_cache_valid" (0) ;
+	}
+	synchronization L1_WriteWaitValid_WriteWaitClack2 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitValid_WriteWaitClack" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 11) ; // M_INV
+		c0."read_v1" ($addr) ; // sur la même adresse
+		c0."write_v" (0) ;
+		chan_L1MCCPACK."write" ($id, $addr, 8) ; // CLNUP
+		c0."write_v_cache_valid" (0) ;
+	}
+	synchronization L1_WriteWaitValid_ValidData (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitValid_ValidData" ;
+		chan_MCL1DTACK."read" ($id, $addr, 7) ; // ACK_WR
+		c0."read_save1" ($addr) ; // chan_MCL1DTACK_addr == addr_save
+		chan_L1PDTACK0."write" ($addr, 3) ; //   ACK_DT_WR
+		c0."write_save" (0) ;
+	}
+	synchronization L1_WriteWaitValid_WriteWaitValid3 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitValid_WriteWaitValid" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 12) ; // M_UP
+		c0."read_v1" ($addr) ; //chan_MCL1CPREQ_addr == v_addr
+		chan_L1MCCPACK."write" ($id, $addr, 15) ; //   ACK_M_UP
+
+	}
+	synchronization L1_WriteWaitValid_WriteWaitValid4 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitValid_WriteWaitValid" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 12) ; // M_UP
+		c0."read_v2" ($addr) ; //chan_MCL1CPREQ_addr != v_addr
+		chan_L1MCCPACK."write" ($id, $addr, 15) ; //   ACK_M_UP
+		//chan_L1MCCPACK_addr = chan_MCL1CPREQ_addr
+
+	}
+	synchronization L1_WriteWaitClack_WriteWaitEmpty (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitClack_WriteWaitEmpty" ;
+		chan_MCL1CLACK."read" ($id, $addr, 9) ; // CLACK
+
+	}
+	synchronization L1_WriteWaitClack_WriteWaitClack2 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitClack_WriteWaitClack2" ;
+		chan_MCL1DTACK."read" ($id, $addr, 7) ; // ACK_WR
+		c0."read_save1" ($addr) ;
+		chan_L1PDTACK0."read" ($addr, 3) ; //ACK_DT_WR
+		c0."write_save" (0) ;
+	}
+	synchronization L1_WriteWaitClack_WriteWaitClack (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitClack_WriteWaitClack" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+
+	}
+	synchronization L1_WriteWaitClack2_Empty (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitClack2_Empty" ;
+		chan_MCL1CLACK."read" ($id, $addr, 9) ; // CLACK
+
+	}
+	synchronization L1_WriteWaitClack2_WriteWaitClack2 (id_t $id, addr_t $addr) label "" {
+		c0."WriteWaitClack2_WriteWaitClack2" ;
+		chan_MCL1CPREQ."read" ($id, $addr, 10) ; // B_INV
+
+	}
+
+	//Mem_Cache0
+	synchronization MC_Empty_ReadWait (id_t $id, addr_t $addr) label "" {
+		mc0."Empty_ReadWait" ;
+		chan_L1MCDTREQ."read" ($id, $addr, 4) ; //RD
+		mc0."read_ligne_addr" ($addr) ;
+		chan_MCMEMDTREQ."write" ($addr, 16) ; //GET
+		mc0."write_src_save" ($id) ;
+	}
+	synchronization MC_Empty_GetWriteWait (id_t $id, addr_t $addr) label "" {
+		mc0."Empty_GetWriteWait" ;
+		chan_L1MCDTREQ."read" ($id, $addr, 5) ; //WR
+		mc0."read_ligne_addr" ($addr) ;
+		chan_MCMEMDTREQ."write" ($addr, 16) ; //GET
+		mc0."write_src_save" ($id) ;
+		mc0."write_dirty" (1) ; //dirty = 1
+
+	}
+	synchronization MC_GetWriteWait_WriteWait (id_t $id, addr_t $addr) label "" {
+		mc0."GetWriteWait_WriteWait" ;
+		chan_MCL1DTACK."write" ($id, $addr, 7) ; //ACK_WR
+		mc0."read_src_save" ($id) ;
+		mc0."write_src_save" (0) ;
+		mc0."read_ligne_addr" ($addr) ;
+	}
+	synchronization MC_WriteWait_ValidMulticast (addr_t $addr) label "" {
+		mc0."WriteWait_ValidMulticast" ;
+		chan_MEMMCDTACK."read" ($addr, 18) ; //ACK_GET
+		mc0."read_ligne_addr" ($addr) ;
+		mc0."write_n_copies" (0) ;
+	}
+	synchronization MC_ReadWait_ReadWait (id_t $id, addr_t $addr) label "" {
+		mc0."ReadWait_ReadWait" ;
+		chan_L1MCDTREQ."read" ($id, $addr, 5) ; // WR
+		mc0."read_ligne_addr" ($addr) ;
+		chan_MCL1DTACK."write" ($id, $addr, 7) ; //ACK_WR
+		mc0."write_dirty" (1) ;
+	}
+	//984   
+	synchronization MC_ReadWait_ValidMulticast (id_t $id, addr_t $addr) label "" {
+		mc0."ReadWait_ValidMulticast" ;
+		chan_MEMMCDTACK."read" ($addr, 18) ; // ACK_GET
+		mc0."read_ligne_addr" ($addr) ;
+		chan_MCL1DTACK."write" ($id, $addr, 6) ; //ACK_WR
+		mc0."read_src_save" ($id) ;
+		mc0."write_src_save" (0) ;
+		mc0."write_n_copies" (1) ;
+		//c_id[0] = src_save, v_c_id[0] = 1,
+		mc0."write_c_id"(0,$id);
+		mc0."write_v_c_id"(0,1);
+
+	}
+	synchronization MC_ValidMulticast_ValidMulticastRead (id_t $id, addr_t $addr) label "" {
+		mc0."ValidMulticast_ValidMulticastRead" ;
+		chan_L1MCDTREQ."read" ($id, $addr, 4) ; //RD
+		mc0."read_ligne_addr" ($addr) ;
+		// n_copies_0 < CACHE_TH
+		mc0."check_n_copies_less_than_CACHE_TH" ;
+		mc0."write_src_save" ($id) ;
+	}
+
+	// 995   
+	synchronization MC_ValidMulsticastRead_ValidMulticastRead (cpt_t $cpt) label "" {
+		mc0."ValidMulticastRead_ValidMulticastRead" ;
+		mc0."check_cpt_less_than_CACHE_TH" ;
+		mc0."read_cpt"($cpt);
+		mc0."check_v_c_id" ($cpt, 1) ;
+		mc0."addition_cpt" ;
+		//	 guard (cpt < 2 && v_c_id[cpt] == 1);
+		//    effect cpt = cpt + 1; 
+
+	}
+	synchronization MC_ValidMulsticastRead_ValidMulticast1 (id_t $id, addr_t $addr, cpt_t $cpt) label "" {
+		mc0."ValidMulticastRead_ValidMulticast" ;
+		mc0."check_cpt_less_than_CACHE_TH" ;
+		mc0."read_cpt"($cpt);
+		mc0."check_v_c_id" ($cpt, 0) ;
+		chan_MCL1DTACK."write" ($id, $addr, 6) ;
+		mc0."write_c_id" ($cpt, $id) ;
+		mc0."read_src_save" ($id) ;
+		mc0."write_v_c_id" ($cpt, 1) ;
+		mc0."addition_n_copies" ;
+		mc0."read_ligne_addr" ($addr) ;
+		mc0."write_cpt" (0) ;
+		mc0."write_src_save" (0) ;
+	}
+	synchronization MC_ValidMulsticastRead_ValidMulticast2 label "" {
+		mc0."ValidMulticastRead_ValidMulticast" ;
+		mc0."check_cpt_equel_to_CACHE_TH" ;
+		v."write_error" (1) ;
+	}
+	synchronization MC_ValidMulsticast_ValidBroadcastInit (id_t $id, addr_t $addr) label "" {
+		mc0."ValidMulticast_ValidBroadcastInit" ;
+		chan_L1MCDTREQ."read" ($id, $addr, 4) ;
+		mc0."read_ligne_addr" ($addr) ;
+		chan_MCL1DTACK."write" ($id, $addr, 6) ;
+		mc0."check_n_copies_more_than_CACHE_TH" ;
+		mc0."addition_n_copies" ;
+		mc0."read_ligne_addr" ($addr) ;
+	}
+	synchronization MC_ValidBroadcastInit_ValidBroadcastInit (cpt_t $cpt) label "" {
+		mc0."ValidBroadcastInit_ValidBroadcastInit" ;
+		mc0."check_cpt_less_than_CACHE_TH" ;
+		mc0."read_cpt"($cpt);
+		mc0."write_v_c_id" ($cpt, 0) ;
+		mc0."addition_cpt" ;
+		mc0."write_c_id" ($cpt, 0) ;
+	}
+	synchronization MC_ValidBroadcastInit_ValidBroadcast label "" {
+		mc0."ValidBroadcastInit_ValidBroadcast" ;
+		mc0."check_cpt_equel_to_CACHE_TH";
+		mc0."write_cpt"(0);
+	}
+    
+    synchronization MC_ValidMulticast_ValidMulticastUpdate (id_t $id, addr_t $addr) label "" {
+		mc0."ValidBroadcastInit_ValidBroadcast" ;
+		mc0."write_dirty"(1);
+		chan_L1MCDTREQ."read"($id,$addr,5); //WR
+		mc0."read_ligne_addr"($addr);
+		mc0."write_src_save"($id);
+		mc0."check_n_copies_not_empty";
+		//n_copies_0 > 0
+	}
+	
+    synchronization MC_ValidMulticast_ValidMulticast (id_t $id, addr_t $addr) label "" {
+		mc0."ValidMulticast_ValidMulticast" ;
+        chan_L1MCDTREQ."read"($id,$addr,5); //WR
+        mc0."read_ligne_addr"($addr);
+        mc0."check_n_copies_empty";
+        mc0."write_dirty"(1);
+        chan_MCL1DTACK."write"($id,$addr,7); //ACK_WRITE
+	}
+	
+//1035?
+	 synchronization MC_ValidMulticastUpdate_ValidMulticastUpdate1 (id_t $id, addr_t $addr,cpt_t $cpt) label "" {
+		mc0."ValidMulticastUpdate_ValidMulticastUpdate" ;
+        chan_MCL1CPREQ."write"($id,$addr,12); //M_UP
+        mc0."check_cpt_less_than_CACHE_TH";
+        mc0."read_cpt"($cpt);
+        mc0."check_c_id_unequal"($cpt,$id);//c_id[cpt] != src_save
+        mc0."read_src_save"($id);
+        mc0."check_v_c_id"($cpt,1); //v_c_id[cpt] == 1)
+        mc0."read_ligne_addr"($addr);
+        mc0."addition_rsp_cpt";
+        mc0."addition_cpt";
+	}
+    
+    synchronization MC_ValidMulticastUpdate_ValidMulticastUpdate2 (id_t $id, addr_t $addr) label "" {
+		mc0."ValidMulticastUpdate_ValidMulticastUpdate" ;
+        mc0."check_rsp_cpt_not_empty"; // rsp_cpy > 0
+        chan_L1MCCPACK."read"($id,$addr,15);  // ACK_M_UP
+        mc0."read_ligne_addr"($addr);
+        mc0."substraction_rsp_cpt";
+	}
+    
+    synchronization MC_ValidMulticastUpdate_UpdateWait label "" {
+		mc0."ValidMulticastUpdate_UpdateWait" ;
+        mc0."check_cpt_equel_to_CACHE_TH";
+        mc0."write_cpt"(0);
+	}
+    
+    synchronization MC_ValidMulticastUpdate_ValidMulticastUpdate( id_t $id, cpt_t $cpt) label "" {
+		mc0."ValidMulticastUpdate_ValidMulticastUpdate" ;
+        mc0."check_cpt_less_than_CACHE_TH";
+        mc0."check_c_id_equal"($cpt,$id);
+        mc0."read_cpt"($cpt);
+        mc0."read_src_save"($id);
+        mc0."check_v_c_id"($cpt,0);
+        mc0."addition_cpt";
+	}
+	
+	 synchronization MC_ValidMulticastUpdate_ValidMulticastUpdateClnup( id_t $id,addr_t $addr) label "" {
+		mc0."ValidMulticastUpdate_ValidMulticastUpdateClnup" ;
+		chan_L1MCCPACK."read"($id,$addr,8); //CLNUP
+		mc0."read_ligne_addr"($addr);
+		mc0."write_src_save_clnup"($id);
+        
+     }
+     
+      synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdate1( id_t $id,addr_t $addr) label "" {
+		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdate" ;
+        mc0."check_cpt_clnup_equel_to_CACHE_TH";
+        chan_MCL1CLACK."write"($id,$addr,9); // CLACK
+        mc0."read_ligne_addr"($addr);
+        mc0."read_src_save_clnup"($id);
+        mc0."write_src_save_clnup"(0);
+        mc0."write_cpt_clnup"(0);
+     }
+     
+     synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdate2( id_t $id,addr_t $addr,cpt_t $cpt) label "" {
+		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdate" ;
+		mc0."check_cpt_clnup_less_than_CACHE_TH";
+		mc0."read_cpt_clnup"($cpt);
+		mc0."check_v_c_id"($cpt,1);
+		mc0."check_c_id_equal"($cpt,$id);
+		mc0."read_src_save_clnup"($id);
+		mc0."write_v_c_id"($cpt,0);
+		mc0."write_c_id"($cpt,0);
+		mc0."substraction_n_copies";
+		chan_MCL1CLACK."read"($id,$addr,9); //ACK_CLNUP
+		mc0."write_src_save_clnup"(0);
+     }
+      synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdateClnup1( cpt_t $cpt) label "" {
+		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdateClnup" ;
+		mc0."check_cpt_clnup_less_than_CACHE_TH";
+		mc0."read_cpt_clnup"($cpt);
+		mc0."check_v_c_id"($cpt,0);  //v_c_id[cpt_clnup] != 1
+		mc0."addition_cpt_clnup";
+     }
+     synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdateClnup2 ( id_t $id,cpt_t $cpt) label "" {
+		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdateClnup" ;
+		mc0."check_cpt_clnup_less_than_CACHE_TH";
+		mc0."read_cpt_clnup"($cpt);
+		mc0."read_src_save_clnup"($id);
+		mc0."check_c_id_unequal"($cpt,$id);  //c_id[cpt_clnup] != src_save_clnup
+		mc0."addition_cpt_clnup";
+     }
+      synchronization MC_ValidMulticast_ValidMulticastClnup ( id_t $id,addr_t $addr) label "" {
+		mc0."ValidMulticast_ValidMulticastClnup" ;
+		chan_L1MCCPACK."read"($id,$addr,8); //CLNUP
+		mc0."read_ligne_addr"($addr);
+		mc0."write_src_save"($id);
+     }
+	synchronization MC_ValidMulticastClnup_ValidMulticast1 ( id_t $id,addr_t $addr) label "" {
+		mc0."ValidMulticastClnup_ValidMulticast" ;
+		mc0."check_cpt_equel_to_CACHE_TH";
+		chan_MCL1CLACK."write"($id,$addr,9);
+		mc0."read_ligne_addr"($addr);
+		mc0."read_src_save"($id);
+		v."write_error"(1);
+		mc0."write_src_save"(0);
+     }   
+     
+     synchronization MC_ValidMulticastClnup_ValidMulticast2 ( id_t $id,addr_t $addr,cpt_t $cpt) label "" {
+		mc0."ValidMulticastClnup_ValidMulticast" ;
+		mc0."check_cpt_less_than_CACHE_TH";
+		mc0."check_v_c_id"($cpt,0); //v_c_id[cpt] != 1
+		mc0."addition_cpt";
+     }   
+    
+	//MEM
+	synchronization MEM_Ready_Ready1 (addr_t $addr) label "" {
+		m0."Ready_Ready" ;
+		chan_MCMEMDTREQ."read" ($addr, 16) ;
+		chan_MEMMCDTACK."write" ($addr, 18) ;
+	}
+	synchronization MEM_Ready_Ready2 (addr_t $addr) label "" {
+		m0."Ready_Ready" ;
+		chan_MCMEMDTREQ."read" ($addr, 17) ;
+		chan_MEMMCDTACK."write" ($addr, 19) ;
+	}
+}
+main tsar ;

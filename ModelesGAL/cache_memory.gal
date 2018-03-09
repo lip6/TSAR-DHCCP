@@ -1,0 +1,2797 @@
+$DT_RD = 0;
+$DT_WR = 1;
+$ACK_DT_RD = 2;
+$ACK_DT_WR = 3;
+$RD = 4;
+$WR = 5;
+$ACK_RD = 6;
+$ACK_WR = 7;
+$CLNUP = 8;
+$CLACK = 9;
+$B_INV = 10;
+$M_INV = 11;
+$M_UP = 12;
+$ACK_B_INV = 13;
+$ACK_M_INV = 14;
+$ACK_M_UP = 15;
+$GET = 16;
+$PUT = 17;
+$ACK_GET = 18;
+$ACK_PUT = 19;
+
+$MC_EMPTY = 17 ;
+$MC_READ_WAIT = 18 ;
+$MC_GET_WRITE_WAIT = 19 ;
+$MC_WRITE_WAIT = 20 ;
+$MC_VALID_MULTICAST = 21 ;
+$MC_VALID_MULTICAST_CLNUP = 22 ;
+$MC_VALID_BROADCAST = 23 ;
+$MC_VALID_MULTICAST_UPDATE = 24 ;
+$MC_VALID_BROADCAST_INV = 25 ;
+$MC_UPDATE_WAIT = 26 ;
+$MC_UPDATE_WAIT_CLNUP = 27 ;
+$MC_BROADCAST_INV_WAIT = 28 ;
+$MC_BROADCAST_INV_PUT = 29 ;
+$MC_PUT_WAIT = 30 ;
+$MC_VALID_BROADCAST_INIT = 31 ;
+$MC_VALID_MULTICAST_READ = 32 ;
+$MC_VALID_MULTICAST_UPDATE_CLNUP = 33 ;
+
+
+$CACHEEMPTY = 1 ;
+$NBMEM = 2 ;
+$CACHE_TH = 2 ;
+$NB_CACHES = 3 ;
+typedef addr_t = 0 .. $NBMEM - 1 ;
+typedef type_t = 0 .. 19 ;
+typedef id_t = 0 .. $NB_CACHES - 1 ;
+typedef dirty_t = 0 .. 1 ;
+typedef copie_t = 0 .. $NB_CACHES ;
+typedef cpt_t = 0 .. $CACHE_TH ;
+typedef valid_t = 0 .. 1 ;
+
+
+gal variable {
+	int error = 0 ;
+
+	transition write_error (addr_t $addr) [true] label "write_error" ($addr) {
+		error = $addr ;
+	}
+	transition read_error (addr_t $addr) [error == $addr] label "read_error" ($addr) {
+	}
+}
+
+
+gal channelAddrType {
+	int isFull = 0 ;
+	int addr = 0 ;
+	int type = 0 ;
+	transition read (addr_t $addr, type_t $rtype) [isFull == 1 && addr == $addr && type == $rtype] label "read" ($addr,
+	$rtype) {
+		isFull = 0 ;
+		addr = 0 ;
+		type = 0 ;
+	}
+
+	transition write (addr_t $addr, type_t $wtype) [isFull == 0] label "write" ($addr, $wtype) {
+		isFull = 1 ;
+		addr = $addr ;
+		type = $wtype ;
+	}
+}
+
+gal channelIdAddrType {
+	int isFull = 0 ;
+	int id = 0 ;
+	int addr = 0 ;
+	int type = 0 ;
+	transition read (id_t $id, addr_t $addr, type_t $rtype) [isFull == 1 && addr == $addr && type == $rtype && id == $id]
+	label "read" ($id, $addr, $rtype) {
+		isFull = 0 ;
+		addr = 0 ;
+		type = 0 ;
+		id = 0 ;
+	}
+
+	transition write (id_t $id, addr_t $addr, type_t $wtype) [isFull == 0] label "write" ($id, $addr, $wtype) {
+		isFull = 1 ;
+		addr = $addr ;
+		type = $wtype ;
+		id = $id ;
+	}
+}
+
+gal Mem_cache {
+	int state = $MC_EMPTY ;
+	int src_save = 0 ;
+	int ligne_addr = 0 ; // doit être 0 pour le mem_cache_0, 1 pour le mem_cache_1
+
+	int n_copies = 0 ;
+	int dirty = 0 ;
+	int cpt = 0 ;
+	int cpt_clnup = 0 ;
+	int rsp_cpt = 0 ;
+	int src_save_clnup = 0 ;
+
+	//	array [$CACHE_TH]c_id =(0,0);
+	//	array [$CACHE_TH]v_c_id =(0,0);
+	//	
+	
+	array [2] c_id = (0, 0) ;
+	array [2] v_c_id = (0, 0) ;
+
+	//ligne_addr
+
+	transition read_ligne_addr (addr_t $addr) [ligne_addr == $addr] label "read_ligne_addr" ($addr) {
+	}
+
+	//src_save
+
+	transition write_src_save (id_t $id) [true] label "write_src_save" ($id) {
+		src_save = $id ;
+	}
+	transition read_src_save (id_t $id) [src_save == $id] label "read_src_save" ($id) {
+	}
+
+	//dirty
+
+	transition write_dirty (dirty_t $dirty) [true] label "write_dirty" ($dirty) {
+		dirty = $dirty ;
+	}
+
+	//n_copies :domaine :NB_CACHES
+
+	transition write_n_copies (copie_t $copie) [true] label "write_n_copies" ($copie) {
+		n_copies = $copie ;
+	}
+	transition check_n_copies_less_than_CACHE_TH [n_copies < $CACHE_TH] label "check_n_copies_less_than_CACHE_TH" {
+	}
+	transition check_n_copies_more_than_CACHE_TH [n_copies >= $CACHE_TH] label "check_n_copies_more_than_CACHE_TH" {
+	}
+	transition check_n_copies_not_empty[n_copies > 0] label "check_n_copies_not_empty"{
+		
+	}
+	transition check_n_copies_empty[n_copies == 0] label "check_n_copies_empty"{
+		
+	}
+	
+	transition addition_n_copies [true] label "addition_n_copies" {
+		n_copies = n_copies + 1 ;
+	}
+    transition substraction_n_copies [true] label "substraction_n_copies" {
+		n_copies = n_copies - 1 ;
+	}
+    
+	//cpt
+
+	transition check_cpt_less_than_CACHE_TH [cpt < $CACHE_TH] label "check_cpt_less_than_CACHE_TH" {
+	}
+	transition chech_cpt_equel_to_CACHE_TH [cpt == $CACHE_TH] label "check_cpt_equel_to_CACHE_TH" {
+	}
+	transition chech_cpt_less_than_NB_CACHES [cpt < $NB_CACHES] label "check_cpt_less_than_NB_CACHES" {
+	}
+	
+	transition addition_cpt (cpt_t $cpt) [true] label "addition_cpt" {
+		cpt = cpt + 1 ;
+	}
+	transition write_cpt (cpt_t $cpt) [true] label "write_cpt" ($cpt) {
+		cpt = $cpt ;
+	}
+	transition read_cpt (cpt_t $cpt) [ $cpt == cpt ]label "read_cpt"($cpt){
+		
+	} 
+
+	//[$CACHE_TH]v_c_id 
+
+	transition write_v_c_id (cpt_t $cpt, valid_t $valid) [true] label "write_v_c_id" ($cpt, $valid) {
+		v_c_id [$cpt] = $valid ;
+	}
+	transition check_v_c_id (cpt_t $cpt, valid_t $valid) [v_c_id [$cpt] == $valid] label "check_v_c_id" ($cpt, $valid) {
+	}
+
+	//[$CACHE_TH]c_id 
+
+	transition write_c_id (cpt_t $cpt, id_t $id) [true] label "write_c_id" ($cpt, $id) {
+		c_id [$cpt] = $id ;
+	}
+	transition check_c_id_unequal (cpt_t $cpt, id_t $id) [c_id [$cpt] != $id] label "check_c_id_unequal" ($cpt, $id) {
+	}
+	transition check_c_id_equal (cpt_t $cpt, id_t $id) [c_id [$cpt] == $id] label "check_c_id_equal" ($cpt, $id) {
+	}
+	//rsp_cpt
+	
+	transition addition_rsp_cpt [true] label "addition_rsp_cpt" {
+		rsp_cpt = rsp_cpt + 1 ;
+	}
+	transition substraction_rsp_cpt [true] label "substraction_rsp_cpt" {
+		rsp_cpt = rsp_cpt - 1 ;
+	}
+	transition check_rsp_cpt_not_empty[rsp_cpt > 0] label "check_rsp_cpt_not_empty"{
+		
+	}
+	transition check_rsp_cpt_empty [rsp_cpt == 0] label "check_rsp_cpt_empty"{
+		
+	}
+	//src_save_clnup
+	transition write_src_save_clnup ( id_t $id) [true] label "write_src_save_clnup" ( $id) {
+		src_save_clnup = $id ;
+	}
+	transition read_src_save_clnup (id_t $id) [src_save_clnup == $id] label "read_src_save_clnup"($id){
+		
+	}
+	//cpt_clnup
+	transition check_cpt_clnup_equel_to_CACHE_TH [cpt_clnup == $CACHE_TH ]label "check_cpt_clnup_equel_to_CACHE_TH" {
+		
+	}
+	transition check_cpt_clnup_less_than_CACHE_TH [cpt_clnup < $CACHE_TH ]label "check_cpt_clnup_less_than_CACHE_TH" {
+		
+	}
+	transition read_cpt_clnup (cpt_t $cpt) [cpt_clnup == $cpt] label "read_cpt_clnup"($cpt){
+		
+	}
+	transition write_cpt_clnup ( cpt_t $cpt) [true] label "write_cpt_clnup" ( $cpt) {
+		cpt_clnup = $cpt ;
+	}
+	transition addition_cpt_clnup [true] label "addition_cpt_clnup" {
+		cpt_clnup = cpt_clnup + 1 ;
+	}
+	
+	
+	transition t_Empty_ReadWait [state == $MC_EMPTY] label "Empty_ReadWait" {
+		state = $MC_READ_WAIT ;
+	}
+	transition t_Empty_GetWriteWait [state == $MC_EMPTY] label "Empty_GetWriteWait" {
+		state = $MC_GET_WRITE_WAIT ;
+	}
+	transition t_GetWriteWait_WriteWait [state == $MC_GET_WRITE_WAIT] label "GetWriteWait_WriteWait" {
+		state = $MC_WRITE_WAIT ;
+	}
+	transition t_WriteWait_ValidMulticast [state == $MC_WRITE_WAIT] label "WriteWait_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+
+	//to self
+
+	transition t_ReadWait_ReadWait [state == $MC_READ_WAIT] label "ReadWait_ReadWait" {
+		state = $MC_READ_WAIT ;
+	}
+	transition t_ReadWait_ValidMulticast [state == $MC_READ_WAIT] label "ReadWait_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+	transition t_ValidMulticast_ValidMulticastRead [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidMulticastRead" {
+		state = $MC_VALID_MULTICAST_READ ;
+	}
+	//to self
+
+	transition t_ValidMulticastRead_ValidMulticastRead [state == $MC_VALID_MULTICAST_READ && cpt < $CACHE_TH &&  v_c_id[cpt] == 1 ] label
+	"ValidMulticastRead_ValidMulticastRead" {
+		state = $MC_VALID_MULTICAST_READ ;
+		cpt = cpt + 1; 	
+	}
+	transition t_ValidMulticastRead_ValidMulticast [state == $MC_VALID_MULTICAST_READ] label
+	"ValidMulticastRead_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+	transition t_ValidMulticast_ValidBroadcastInit [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidBroadcastInit" {
+		state = $MC_VALID_BROADCAST_INIT ;
+	}
+
+	//to self
+
+	transition t_ValidBroadcastInit_ValidBroadcastInit [state == $MC_VALID_BROADCAST_INIT && cpt < $CACHE_TH] label
+	"ValidBroadcastInit_ValidBroadcastInit" {
+		state = $MC_VALID_BROADCAST_INIT ;
+		v_c_id[cpt] = 0;
+		c_id[cpt] = 0;
+		 cpt = cpt + 1;
+		// guard (cpt < 2);
+      //  
+	}
+	transition t_ValidBroadcastInit_ValidBroadcast [state == $MC_VALID_BROADCAST_INIT && cpt == $CACHE_TH] label
+	"ValidBroadcastInit_ValidBroadcast" {
+		state = $MC_VALID_BROADCAST ;
+		cpt = 0;
+	}
+	transition t_ValidMulticast_ValidMulticastUpdate [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidMulticastUpdate" {
+		state = $MC_VALID_MULTICAST_UPDATE ;
+	}
+	//to self
+
+	transition t_ValidMulticast_ValidMulticast [state == $MC_VALID_MULTICAST] label "ValidMulticast_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+
+	//to self
+
+	transition t_ValidMulticastUpdate_ValidMulticastUpdate [state == $MC_VALID_MULTICAST_UPDATE && cpt < $CACHE_TH && (c_id[cpt] == src_save || v_c_id[cpt] == 0)] label
+	"ValidMulticastUpdate_ValidMulticastUpdate" {
+		state = $MC_VALID_MULTICAST_UPDATE ;
+		cpt = cpt + 1;
+	}
+	transition t_ValidMulticastUpdate_UpdateWait [state == $MC_VALID_MULTICAST_UPDATE  &&  cpt == $CACHE_TH ] label "ValidMulticastUpdate_UpdateWait" {
+		state = $MC_UPDATE_WAIT ;
+		cpt = 0;
+	}
+	transition t_ValidMulticastUpdate_ValidMulticastUpdateClnup [state == $MC_VALID_MULTICAST_UPDATE] label
+	"ValidMulticastUpdate_ValidMulticastUpdateClnup" {
+		state = $MC_VALID_MULTICAST_UPDATE_CLNUP ;
+	}
+	transition t_ValidMulticastUpdateClnup_ValidMulticastUpdate [state == $MC_VALID_MULTICAST_UPDATE_CLNUP] label
+	"ValidMulticastUpdateClnup_ValidMulticastUpdate" {
+		state = $MC_VALID_MULTICAST_UPDATE ;
+	}
+
+	//to self
+
+	transition t_ValidMulticastUpdateClnup_ValidMulticastUpdateClnup [state == $MC_VALID_MULTICAST_UPDATE_CLNUP  &&  cpt_clnup < $CACHE_TH  && v_c_id[cpt_clnup] == 1 && c_id[cpt_clnup] == src_save_clnup] label
+	"ValidMulticastUpdateClnup_ValidMulticastUpdateClnup" {
+		state = $MC_VALID_MULTICAST_UPDATE_CLNUP ;
+		cpt_clnup = cpt_clnup + 1;
+	}
+	transition t_ValidMulticast_ValidMulticastClnup [state == $MC_VALID_MULTICAST] label
+	"ValidMulticast_ValidMulticastClnup" {
+		state = $MC_VALID_MULTICAST_CLNUP ;
+	}
+	transition t_ValidMulticastClnup_ValidMulticast [state == $MC_VALID_MULTICAST_CLNUP] label
+	"ValidMulticastClnup_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+	//to self
+
+	transition t_ValidMulticastClnup_ValidMulticastClnup [state == $MC_VALID_MULTICAST_CLNUP && cpt < 2 && (v_c_id[cpt] != 1 || c_id[cpt] != src_save)] label
+	"ValidMulticastClnup_ValidMulticastClnup" {
+		state = $MC_VALID_MULTICAST_CLNUP ;
+		cpt = cpt + 1;
+	}
+	//to self
+
+	transition t_UpdateWait_UpdateWait [state == $MC_UPDATE_WAIT] label "UpdateWait_UpdateWait" {
+		state = $MC_UPDATE_WAIT ;
+	}
+	transition t_UpdateWait_UpdateWaitClnup [state == $MC_UPDATE_WAIT] label "UpdateWait_UpdateWaitClnup" {
+		state = $MC_UPDATE_WAIT_CLNUP ;
+	}
+	transition t_UpdateWaitClnup_UpdateWait [state == $MC_UPDATE_WAIT_CLNUP] label "UpdateWaitClnup_UpdateWait" {
+		state = $MC_UPDATE_WAIT ;
+	}
+	//to self
+
+	transition t_UpdateWaitClnup_UpdateWaitClnup [state == $MC_UPDATE_WAIT_CLNUP && cpt < 2 && (v_c_id[cpt] != 1 || c_id[cpt] != src_save_clnup)] label
+	"UpdateWaitClnup_UpdateWaitClnup" {
+		state = $MC_UPDATE_WAIT_CLNUP ;
+		 cpt = cpt + 1;
+	}
+	transition t_UpdateWait_ValidMulticast [state == $MC_UPDATE_WAIT] label "UpdateWait_ValidMulticast" {
+		state = $MC_VALID_MULTICAST ;
+	}
+
+	//to self
+
+	transition t_ValidBroadcast_ValidBroadcast [state == $MC_VALID_BROADCAST] label "ValidBroadcast_ValidBroadcast" {
+		state = $MC_VALID_BROADCAST ;
+	}
+	transition t_ValidBroadcast_ValidBroadcastInv [state == $MC_VALID_BROADCAST] label
+	"ValidBroadcast_ValidBroadcastInv" {
+		state = $MC_VALID_BROADCAST_INV ;
+	}
+	transition t_ValidBroadcastInv_BroadcastInvWait [state == $MC_VALID_BROADCAST_INV && cpt == 3] label
+	"ValidBroadcastInv_BroadcastInvWait" {
+		state = $MC_BROADCAST_INV_WAIT ;
+		cpt = 0;
+	}
+	//to self
+
+	transition t_ValidBroadcastInv_ValidBroadcastInv [state == $MC_VALID_BROADCAST_INV] label
+	"ValidBroadcastInv_ValidBroadcastInv" {
+		state = $MC_VALID_BROADCAST_INV ;
+	}
+	//to self
+
+	transition t_BroadcastInvWait_BroadcastInvWait [state == $MC_BROADCAST_INV_WAIT] label
+	"BroadcastInvWait_BroadcastInvWait" {
+		state = $MC_BROADCAST_INV_WAIT ;
+	}
+	transition t_BroadcastInvWait_BroadcastInvPut [state == $MC_BROADCAST_INV_WAIT] label
+	"BroadcastInvWait_BroadcastInvPut" {
+		state = $MC_BROADCAST_INV_PUT ;
+	}
+	transition t_BroadcastInvPut_PutWait [state == $MC_BROADCAST_INV_PUT] label "BroadcastInvPut_PutWait" {
+		state = $MC_PUT_WAIT ;
+	}
+	transition t_PutWait_Empty [state == $MC_PUT_WAIT] label "PutWait_Empty" {
+		state = $MC_EMPTY ;
+	}
+}
+
+
+gal Tester {
+	int state = 0;
+	transition t0[state == 0] label "state_0"{
+		state = 1;
+	}
+	transition t1[state == 1] label "state_1"{
+		state = 2;
+	}
+	transition t2[state == 2] label "state_2"{
+		state = 3;
+	}
+	transition t3[state == 3] label "state_3"{
+		state = 4;
+	}
+	transition t4[state == 4] label "state_4"{
+		state = 5;
+	}
+	transition t5[state == 5] label "state_5"{
+		state = 6;
+	}
+	transition t6[state == 6] label "state_6"{
+		state = 7;
+	}
+	transition t7[state == 7] label "state_7"{
+		state = 8;
+	}
+	transition t8[state == 8] label "state_8"{
+		state = 9;
+	}
+	transition t9[state == 9] label "state_9"{
+		state = 10;
+	}
+	transition t10[state == 10] label "state_10"{
+		state = 11;
+	}
+}
+
+composite c {
+	
+	Tester tester1; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST
+	Tester tester2; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST
+	Tester tester3; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST
+	Tester tester4; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST_READ
+	Tester tester5; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST_CLNUP
+	Tester tester6; //EMPTY -> READ_WAIT -> READ_WAIT
+    Tester tester7; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT ->   
+    Tester tester7_1; //VALID_BROADCAST ->
+    Tester tester7_2; //VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_PUT -> PUT_WAIT -> EMPTY
+	Tester tester8; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_WAIT	   
+    Tester tester9; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> VALID_BROADCAST_INV 	
+    Tester tester10_1; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST 
+    Tester tester10_2; 
+    Tester tester10_3; 	
+//  Tester tester11; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST_INIT
+	Tester tester12; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> VALID_MULTICAST
+	Tester tester12_1;
+	Tester tester13; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT
+	Tester tester14; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT
+//	Tester tester15; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT_CLNUP
+    Tester tester16; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE
+	Tester tester16_1;
+	Tester tester17; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE
+	Tester tester18; //EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE_CLNUP
+	
+	Tester tester19; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST
+	Tester tester20; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST
+	Tester tester21; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST
+	Tester tester22; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST_READ
+	Tester tester23; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST_CLNUP
+    Tester tester24; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_PUT -> PUT_WAIT -> EMPTY 
+//  Tester tester25; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_WAIT	   
+//  Tester tester26; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> VALID_BROADCAST_INV 	
+//  Tester tester27; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST 	
+//  Tester tester28; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST_INIT
+	Tester tester29; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> VALID_MULTICAST
+//	Tester tester30; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT
+//	Tester tester31; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT
+//	Tester tester32; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT_CLNUP
+//  Tester tester33; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE
+	Tester tester34; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE
+	Tester tester35; //EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE_CLNUP
+	
+	
+	
+	
+	
+	variable v ;
+	Mem_cache mc0 ;
+
+	//channels between L1 and MC
+	channelIdAddrType chan_L1MCDTREQ ;
+	channelIdAddrType chan_MCL1DTACK ;
+	channelIdAddrType chan_MCL1CLACK ;
+	channelIdAddrType chan_MCL1CPREQ ;
+	channelIdAddrType chan_L1MCCPACK ;
+
+	//channels between MC and MEM	
+	channelAddrType chan_MCMEMDTREQ ;
+	channelAddrType chan_MEMMCDTACK ;
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST
+	synchronization tester1_step_0 label "" {
+		tester1."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester1_step_1 label "" {
+		tester1."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester1_step_2 label "" {
+		tester1."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester1_step_3 label "" {
+		tester1."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+	synchronization tester1_step_4 label "" {
+		tester1."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_READ
+	synchronization tester1_step_5 label "" {
+		tester1."state_5" ;
+		self."write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+	
+
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST
+   	synchronization tester2_step_0 label "" {
+		tester2."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester2_step_1 label "" {
+		tester2."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester2_step_2 label "" {
+		tester2."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester2_step_3 label "" {
+		tester2."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+     synchronization tester2_step_4 label "" {
+		tester2."state_4" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+		self."read_L1MCCPACK" ;
+	}
+	//VALID_MULTICAST_CLNUP
+	synchronization tester2_step_5 label "" {
+		tester2."state_5" ;
+		self."write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+	//VALID_MULTICAST
+
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST
+    synchronization tester3_step_0 label "" {
+		tester3."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester3_step_1 label "" {
+		tester3."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester3_step_2 label "" {
+		tester3."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester3_step_3 label "" {
+		tester3."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+	synchronization tester3_step_4 label "" {
+		tester3."state_4" ;
+		chan_L1MCDTREQ."write" ( 0, 0, $WR) ;
+	}
+	synchronization tester3_step_5 label "" {
+		tester3."state_5" ;
+		self."read_L1MCDTREQ_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+    //VALID_MULTICAST
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST_READ
+    synchronization tester4_step_0 label "" {
+		tester4."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester4_step_1 label "" {
+		tester4."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester4_step_2 label "" {
+		tester4."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester4_step_3 label "" {
+		tester4."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+	synchronization tester4_step_4 label "" {
+		tester4."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_READ
+
+
+	//VALID_MULTICAST_READ
+
+
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST_CLNUP
+   	synchronization tester5_step_0 label "" {
+		tester5."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester5_step_1 label "" {
+		tester5."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester5_step_2 label "" {
+		tester5."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester5_step_3 label "" {
+		tester5."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+     synchronization tester5_step_4 label "" {
+		tester5."state_4" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+		self."read_L1MCCPACK" ;
+	}
+	//VALID_MULTICAST_CLNUP
+     synchronization tester5_step_5 label "" {
+		tester5."state_5" ;
+       //  c_id[cpt]!=src_save
+             
+  	}
+    //VALID_MULTICAST_CLNUP
+
+//EMPTY -> READ_WAIT -> READ_WAIT
+   	synchronization tester6_step_0 label "" {
+		tester6."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester6_step_1 label "" {
+		tester6."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester6_step_2 label "" {
+		tester6."state_2" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester6_step_3 label "" {
+		tester6."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+    //READ_WAIT
+    
+    
+    
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> 
+    synchronization tester7_step_0 label "" {
+		tester7."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester7_step_1 label "" {
+		tester7."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester7_step_2 label "" {
+		tester7."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester7_step_3 label "" {
+		tester7."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+    synchronization tester7_step_4 label "" {
+		tester7."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ;
+	}
+	synchronization tester7_step_5 label "" {
+		tester7."state_5" ;
+		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+    //VALID_BROADCAST_INIT
+  
+// VALID_BROADCAST -> VALID_BROADCAST_INV ->  	   
+    //VALID_BROADCAST
+    synchronization tester7_1_step_0 label "" {
+		tester7_1."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ;
+	    self."read_L1MCDTREQ";
+	}
+    //VALID_BROADCAST_INV
+
+// BROADCAST_INV_WAIT -> BROADCAST_INV_PUT -> PUT_WAIT -> EMPTY    
+    //BROADCAST_INV_WAIT
+    synchronization tester7_2_step_0 label "" {
+		tester7_2."state_0" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+    //BROADCAST_INT_PUT
+    synchronization tester7_2_step_1 label "" {
+		tester7_2."state_1" ;
+		self."write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $PUT) ; 
+	}
+    //PUT_WAIT
+     synchronization tester7_2_step_2 label "" {
+		tester7_2."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_PUT) ;
+		self."read_MEMMCDTACK";
+	}
+    //EMPTY
+    
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> 	   
+//    synchronization tester8_step_0 label "" {
+//		tester8."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+//	}
+//	synchronization tester8_step_1 label "" {
+//		tester8."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//	//READ_WAIT
+//	synchronization tester8_step_2 label "" {
+//		tester8."state_2" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+//	}
+//	synchronization tester8_step_3 label "" {
+//		tester8."state_3" ;
+//		self."read_MEMMCDTACK_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//	//VALID_MULTICAST
+//    synchronization tester8_step_4 label "" {
+//		tester8."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester8_step_5 label "" {
+//		tester8."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+    
+//    //VALID_BROADCAST
+//    synchronization tester8_step_6 label "" {
+//		tester8."state_6" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ;
+//	    self."read_L1MCDTREQ";
+//	}
+//    //VALID_BROADCAST_INV
+  
+  
+ // BROADCAST_INV_WAIT -> BROADCAST_INV_WAIT   
+    //BROADCAST_INV_WAIT
+    synchronization tester8_1_step_7 label "" {
+		tester8."state_0" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+	}
+	synchronization tester8_1_step_8 label "" {
+		tester8."state_1" ;
+		self."read_L1MCCPACK_write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+    //BROADCAST_INV_WAIT
+    
+    
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> 	
+//    synchronization tester9_step_0 label "" {
+//		tester9."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+//	}
+//	synchronization tester9_step_1 label "" {
+//		tester9."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//	//READ_WAIT
+//	synchronization tester9_step_2 label "" {
+//		tester9."state_2" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+//	}
+//	synchronization tester9_step_3 label "" {
+//		tester9."state_3" ;
+//		self."read_MEMMCDTACK_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//	//VALID_MULTICAST
+//    synchronization tester9_step_4 label "" {
+//		tester9."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester9_step_5 label "" {
+//		tester9."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+ 
+ 
+//VALID_BROADCAST -> VALID_BROADCAST_INV -> VALID_BROADCAST_INV     
+    //VALID_BROADCAST
+    synchronization tester9_step_0 label "" {
+		tester9."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ;
+	    self."read_L1MCDTREQ";
+	}
+    //VALID_BROADCAST_INV
+    synchronization tester9_step_1 label "" {
+		tester9."state_1" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+	}
+	synchronization tester9_step_2 label "" {
+		tester9."state_2" ;
+		self."read_L1MCCPACK_write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+    
+    //VALID_BROADCAST_INV
+
+
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> 
+//    synchronization tester10_step_0 label "" {
+//		tester10."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+//	}
+//	synchronization tester10_step_1 label "" {
+//		tester10."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//	//READ_WAIT
+//	synchronization tester10_step_2 label "" {
+//		tester10."state_2" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+//	}
+//	synchronization tester10_step_3 label "" {
+//		tester10."state_3" ;
+//		self."read_MEMMCDTACK_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//	//VALID_MULTICAST
+//    synchronization tester10_step_4 label "" {
+//		tester10."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester10_step_5 label "" {
+//		tester10."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+  
+  
+//VALID_BROADCAST -> VALID_BROADCAST 	   
+    //VALID_BROADCAST
+ //1
+     synchronization tester10_1_step_6 label "" {
+		tester10_1."state_0" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+	}
+	synchronization tester10_1_step_7 label "" {
+		tester10_1."state_1" ;
+		self."read_L1MCCPACK_write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+ //2
+ 	synchronization tester10_2_step_6 label "" {
+		tester10_2."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ;
+	}
+	synchronization tester10_2_step_7 label "" {
+		tester10_2."state_1" ;
+		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+ //3
+    synchronization tester10_3_step_6 label "" {
+		tester10_3."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ;
+	}
+	synchronization tester10_3_step_7 label "" {
+		tester10_3."state_1" ;
+		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+    	
+    //VALID_BRAODCAST
+
+
+////EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST_INIT
+//    synchronization tester11_step_0 label "" {
+//		tester11."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+//	}
+//	synchronization tester11_step_1 label "" {
+//		tester11."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//	//READ_WAIT
+//	synchronization tester11_step_2 label "" {
+//		tester11."state_2" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+//	}
+//	synchronization tester11_step_3 label "" {
+//		tester11."state_3" ;
+//		self."read_MEMMCDTACK_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//	//VALID_MULTICAST
+//    synchronization tester11_step_4 label "" {
+//		tester11."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester11_step_5 label "" {
+//		tester11."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+//
+//
+//    //VALID_BROADCAST_INIT
+
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE 
+    synchronization tester12_step_0 label "" {
+		tester12."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester12_step_1 label "" {
+		tester12."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester12_step_2 label "" {
+		tester12."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester12_step_3 label "" {
+		tester12."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+     synchronization tester12_step_4 label "" {
+		tester12."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+ 
+ 
+ //-> UPDATE_WAIT -> VALID_MULTICAST    
+    //UPDATE_WAIT
+     synchronization tester12_1_step_0 label "" {
+		tester12_1."state_0" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+    //VALID_MULTICAST
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> 
+//    synchronization tester13_step_0 label "" {
+//		tester13."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+//	}
+//	synchronization tester13_step_1 label "" {
+//		tester13."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//	//READ_WAIT
+//	synchronization tester13_step_2 label "" {
+//		tester13."state_2" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+//	}
+//	synchronization tester13_step_3 label "" {
+//		tester13."state_3" ;
+//		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//	//VALID_MULTICAST
+//     synchronization tester13_step_4 label "" {
+//		tester13."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//	//VALID_MULTICAST_UPDATE
+//     
+ 
+//UPDATE_WAIT -> UPDATE_WAIT 
+    //UPDATE_WAIT
+     synchronization tester13_step_0 label "" {
+		tester13."state_0" ;
+		chan_L1MCCPACK."write" (0,0, $ACK_M_UP) ; 
+		self."read_L1MCDTREQ" ;
+	}
+    //UPDATE_WAIT
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE ->
+//    synchronization tester14_step_0 label "" {
+//	 	tester14."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+//	}
+//	synchronization tester14_step_1 label "" {
+//		tester14."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//	//READ_WAIT
+//	synchronization tester14_step_2 label "" {
+//		tester14."state_2" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+//	}
+//	synchronization tester14_step_3 label "" {
+//		tester14."state_3" ;
+//		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//	//VALID_MULTICAST
+//     synchronization tester14_step_4 label "" {
+//		tester14."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//	//VALID_MULTICAST_UPDATE
+  
+  
+ // UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT    
+    //UPDATE_WAIT
+    synchronization tester14_step_0 label "" {
+		tester14."state_0" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+		self."read_L1MCCPACK";
+	}
+    //UPDATE_WAIT_CLNUP
+    synchronization tester14_step_1 label "" {
+		tester14."state_1" ;
+		self."write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+    //UPDATE_WAIT
+    
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT_CLNUP
+//    synchronization tester15_step_0 label "" {
+//	 	tester15."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+//	}
+//	synchronization tester15_step_1 label "" {
+//		tester15."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//	//READ_WAIT
+//	synchronization tester15_step_2 label "" {
+//		tester15."state_2" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+//	}
+//	synchronization tester15_step_3 label "" {
+//		tester15."state_3" ;
+//		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//	//VALID_MULTICAST
+//     synchronization tester15_step_4 label "" {
+//		tester15."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//	//VALID_MULTICAST_UPDATE
+//     
+//    //UPDATE_WAIT
+//    synchronization tester15_step_5 label "" {
+//		tester15."state_5" ;
+//		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+//		self."read_L1MCCPACK";
+//	}
+//    //UPDATE_WAIT_CLNUP
+//    
+//    //UPDATE_WAIT_CLNUP
+    
+    
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE
+ //1   
+    synchronization tester16_step_0 label "" {
+	 	tester16."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester16_step_1 label "" {
+		tester16."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester16_step_2 label "" {
+		tester16."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester16_step_3 label "" {
+		tester16."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+     synchronization tester16_step_4 label "" {
+		tester16."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+
+    synchronization tester16_step_5 label "" {
+		tester16."state_5" ;
+		self."write_MCL1CPREQ" ;
+		chan_MCL1CPREQ."read" (0, 0, $M_UP) ;
+	}
+    //VALID_MULTICAST_UPDATE
+
+
+//2      
+     synchronization tester16_1_step_0 label "" {
+	 	tester16_1."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester16_1_step_1 label "" {
+		tester16_1."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester16_1_step_2 label "" {
+		tester16_1."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester16_1_step_3 label "" {
+		tester16_1."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+     synchronization tester16_1_step_4 label "" {
+		tester16_1."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+
+    synchronization tester16_1_step_5 label "" {
+		tester16_1."state_5" ;
+		chan_L1MCCPACK."write" (0,0, $ACK_M_UP) ; 
+		self."read_L1MCDTREQ" ;
+	}
+    //VALID_MULTICAST_UPDATE
+    
+    
+    
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE
+    synchronization tester17_step_0 label "" {
+	 	tester17."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester17_step_1 label "" {
+		tester17."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester17_step_2 label "" {
+		tester17."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester17_step_3 label "" {
+		tester17."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+     synchronization tester17_step_4 label "" {
+		tester17."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+	 synchronization tester17_step_5 label "" {
+		tester17."state_5" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+		self."read_L1MCCPACK";
+	}
+	//VALID_MULTICAST_UPDATE_CLNUP
+	 synchronization tester17_step_6 label "" {
+		tester17."state_6" ;
+		self."write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+	//VALID_MULTICAST_UPDATE
+
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE_CLNUP
+	 synchronization tester18_step_0 label "" {
+	 	tester18."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+	}
+	synchronization tester18_step_1 label "" {
+		tester18."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+	//READ_WAIT
+	synchronization tester18_step_2 label "" {
+		tester18."state_2" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ;
+	}
+	synchronization tester18_step_3 label "" {
+		tester18."state_3" ;
+		self."read_MEMMCDTACK_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+     synchronization tester18_step_4 label "" {
+		tester18."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+	 synchronization tester18_step_5 label "" {
+		tester18."state_5" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+		self."read_L1MCCPACK";
+	}
+	//VALID_MULTICAST_UPDATE_CLNUP
+	
+	//VALID_MULTICAST_UPDATE_CLNUP
+	
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST
+	synchronization tester19_step_0 label "" {
+		tester19."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester19_step_1 label "" {
+		tester19."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester19_step_2 label "" {
+		tester19."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester19_step_3 label "" {
+		tester19."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+     
+	//VALID_MULTICAST
+	synchronization tester19_step_4 label "" {
+		tester19."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_READ
+	synchronization tester19_step_5 label "" {
+		tester19."state_5" ;
+		self."write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+	//VALID_MULTICAST
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST
+	synchronization tester20_step_0 label "" {
+		tester20."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester20_step_1 label "" {
+		tester20."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester20_step_2 label "" {
+		tester20."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester20_step_3 label "" {
+		tester20."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+	//VALID_MULTICAST
+     synchronization tester20_step_4 label "" {
+		tester20."state_4" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+		self."read_L1MCCPACK" ;
+	}
+	//VALID_MULTICAST_CLNUP
+	synchronization tester20_step_5 label "" {
+		tester20."state_5" ;
+		self."write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+	//VALID_MULTICAST
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST
+  	synchronization tester21_step_0 label "" {
+		tester21."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester21_step_1 label "" {
+		tester21."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester21_step_2 label "" {
+		tester21."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester21_step_3 label "" {
+		tester21."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+  	//VALID_MULTICAST
+	synchronization tester21_step_4 label "" {
+		tester21."state_4" ;
+		chan_L1MCDTREQ."write" ( 0, 0, $WR) ;
+	}
+	synchronization tester21_step_5 label "" {
+		tester21."state_5" ;
+		self."read_L1MCDTREQ_write_MCL1DTACK" ;
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+    //VALID_MULTICAST 
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST_READ
+   
+   synchronization tester22_step_0 label "" {
+		tester22."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester22_step_1 label "" {
+		tester22."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester22_step_2 label "" {
+		tester22."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester22_step_3 label "" {
+		tester22."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+  	//VALID_MULTICAST
+   synchronization tester22_step_4 label "" {
+		tester22."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_READ
+	
+	//VALID_MULTICAST_READ
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST_CLNUP
+    synchronization tester23_step_0 label "" {
+		tester23."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester23_step_1 label "" {
+		tester23."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester23_step_2 label "" {
+		tester23."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester23_step_3 label "" {
+		tester23."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+  	//VALID_MULTICAST
+     synchronization tester23_step_4 label "" {
+		tester23."state_4" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+		self."read_L1MCCPACK" ;
+	}
+	//VALID_MULTICAST_CLNUP
+     synchronization tester23_step_5 label "" {
+		tester23."state_5" ;
+       //  c_id[cpt]!=src_save
+             
+  	}
+    //VALID_MULTICAST_CLNUP
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_PUT -> PUT_WAIT -> EMPTY 
+    synchronization tester24_step_0 label "" {
+		tester24."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester24_step_1 label "" {
+		tester24."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester24_step_2 label "" {
+		tester24."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester24_step_3 label "" {
+		tester24."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+  	//VALID_MULTICAST
+    synchronization tester24_step_4 label "" {
+		tester24."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $RD) ;
+	}
+	synchronization tester24_step_5 label "" {
+		tester24."state_5" ;
+		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+	}
+    //VALID_BROADCAST_INIT
+    
+//    //VALID_BROADCAST
+//    synchronization tester24_step_6 label "" {
+//		tester24."state_6" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ;
+//	    self."read_L1MCDTREQ";
+//	}
+//    //VALID_BROADCAST_INV
+//    
+//    //BROADCAST_INV_WAIT
+//    synchronization tester24_step_7 label "" {
+//		tester24."state_7" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//    //BROADCAST_INT_PUT
+//    synchronization tester24_step_8 label "" {
+//		tester24."state_8" ;
+//		self."write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $PUT) ; 
+//	}
+//    //PUT_WAIT
+//     synchronization tester24_step_9 label "" {
+//		tester24."state_9" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_PUT) ;
+//		self."read_MEMMCDTACK";
+//	}
+//    //EMPTY
+
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_WAIT	   
+//   synchronization tester25_step_0 label "" {
+//		tester25."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester25_step_1 label "" {
+//		tester25."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester25_step_2 label "" {
+//		tester25."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester25_step_3 label "" {
+//		tester25."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//   
+//   //VALID_MULTICAST
+//    synchronization tester25_step_4 label "" {
+//		tester25."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester25_step_5 label "" {
+//		tester25."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+//    
+//    //VALID_BROADCAST
+//    synchronization tester25_step_6 label "" {
+//		tester25."state_6" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ;
+//	    self."read_L1MCDTREQ";
+//	}
+//    //VALID_BROADCAST_INV
+//    
+//    //BROADCAST_INV_WAIT
+//    synchronization tester25_step_7 label "" {
+//		tester25."state_7" ;
+//		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+//	}
+//	synchronization tester25_step_8 label "" {
+//		tester25."state_8" ;
+//		self."read_L1MCCPACK_write_MCL1CLACK" ;
+//		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+//	}
+//    //BROADCAST_INV_WAIT
+//    
+
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> VALID_BROADCAST_INV 	
+//   synchronization tester26_step_0 label "" {
+//		tester26."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester26_step_1 label "" {
+//		tester26."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester26_step_2 label "" {
+//		tester26."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester26_step_3 label "" {
+//		tester26."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//  	//VALID_MULTICAST
+//  	synchronization tester26_step_4 label "" {
+//		tester26."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester26_step_5 label "" {
+//		tester26."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+//    
+//    //VALID_BROADCAST
+//    synchronization tester26_step_6 label "" {
+//		tester26."state_6" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ;
+//	    self."read_L1MCDTREQ";
+//	}
+//    //VALID_BROADCAST_INV
+//    synchronization tester26_step_7 label "" {
+//		tester26."state_7" ;
+//		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+//	}
+//	synchronization tester26_step_8 label "" {
+//		tester26."state_8" ;
+//		self."read_L1MCCPACK_write_MCL1CLACK" ;
+//		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+//	}
+//    
+//    //VALID_BROADCAST_INV
+//  	
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST 	
+//    synchronization tester27_step_0 label "" {
+//		tester27."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester27_step_1 label "" {
+//		tester27."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester27_step_2 label "" {
+//		tester27."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester27_step_3 label "" {
+//		tester27."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//  	//VALID_MULTICAST
+//    synchronization tester27_step_4 label "" {
+//		tester27."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester27_step_5 label "" {
+//		tester27."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+//    
+//    //VALID_BROADCAST
+// //1
+//     synchronization tester27_step_6 label "" {
+//		tester27."state_6" ;
+//		chan_L1MCCPACK."write" (0,0, $CLNUP) ; 
+//	}
+//	synchronization tester27_step_7 label "" {
+//		tester27."state_7" ;
+//		self."read_L1MCCPACK_write_MCL1CLACK" ;
+//		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+//	}
+//// //2
+//// 	synchronization tester27_step_6 label "" {
+////		tester27."state_6" ;
+////		chan_L1MCDTREQ."write" (0,0, $RD) ;
+////	}
+////	synchronization tester27_step_7 label "" {
+////		tester27."state_7" ;
+////		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+////		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+////	}
+//// //3
+////    synchronization tester27_step_6 label "" {
+////		tester27."state_6" ;
+////		chan_L1MCDTREQ."write" (0,0, $WR) ;
+////	}
+////	synchronization tester27_step_7 label "" {
+////		tester27."state_7" ;
+////		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+////		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+////	}
+////    	
+//    //VALID_BRAODCAST
+
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST_INIT
+//     synchronization tester28_step_0 label "" {
+//		tester28."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester28_step_1 label "" {
+//		tester28."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester28_step_2 label "" {
+//		tester28."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester28_step_3 label "" {
+//		tester28."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//   //VALID_MULTICAST
+//    synchronization tester28_step_4 label "" {
+//		tester28."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $RD) ;
+//	}
+//	synchronization tester28_step_5 label "" {
+//		tester28."state_5" ;
+//		self."read_L1MCDTREQ_write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_RD) ;
+//	}
+//    //VALID_BROADCAST_INIT
+//
+//
+//    //VALID_BROADCAST_INIT
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> VALID_MULTICAST
+    synchronization tester29_step_0 label "" {
+		tester29."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester29_step_1 label "" {
+		tester29."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester29_step_2 label "" {
+		tester29."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester29_step_3 label "" {
+		tester29."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+	//VALID_MULTICAST
+     synchronization tester29_step_4 label "" {
+		tester29."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+     
+//    //UPDATE_WAIT
+//     synchronization tester29_step_5 label "" {
+//		tester29."state_5" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//    //VALID_MULTICAST
+ 
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT
+//   	synchronization tester30_step_0 label "" {
+//		tester30."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester30_step_1 label "" {
+//		tester30."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester30_step_2 label "" {
+//		tester30."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester30_step_3 label "" {
+//		tester30."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//   	//VALID_MULTICAST
+//     synchronization tester30_step_4 label "" {
+//		tester30."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//	//VALID_MULTICAST_UPDATE
+//     
+//    //UPDATE_WAIT
+//     synchronization tester30_step_5 label "" {
+//		tester30."state_5" ;
+//		chan_L1MCCPACK."write" (0,0, $ACK_M_UP) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//    //UPDATE_WAIT
+
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT
+//    synchronization tester31_step_0 label "" {
+//		tester31."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester31_step_1 label "" {
+//		tester31."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester31_step_2 label "" {
+//		tester31."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester31_step_3 label "" {
+//		tester31."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//    //VALID_MULTICAST
+//     synchronization tester31_step_4 label "" {
+//		tester31."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//	//VALID_MULTICAST_UPDATE
+//     
+//    //UPDATE_WAIT
+//    synchronization tester31_step_5 label "" {
+//		tester31."state_5" ;
+//		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+//		self."read_L1MCCPACK";
+//	}
+//    //UPDATE_WAIT_CLNUP
+//    synchronization tester31_step_6 label "" {
+//		tester31."state_6" ;
+//		self."write_MCL1CLACK" ;
+//		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+//	}
+//    //UPDATE_WAIT
+//    
+    
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT_CLNUP
+//	synchronization tester32_step_0 label "" {
+//		tester32."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester32_step_1 label "" {
+//		tester32."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester32_step_2 label "" {
+//		tester32."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester32_step_3 label "" {
+//		tester32."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//   	//VALID_MULTICAST
+//   	 synchronization tester32_step_4 label "" {
+//		tester32."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//	//VALID_MULTICAST_UPDATE
+//     
+//    //UPDATE_WAIT
+//    synchronization tester32_step_5 label "" {
+//		tester32."state_5" ;
+//		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+//		self."read_L1MCCPACK";
+//	}
+//    //UPDATE_WAIT_CLNUP
+//    
+//    //UPDATE_WAIT_CLNUP
+//    
+    
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE
+//    synchronization tester33_step_0 label "" {
+//		tester33."state_0" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//	}
+//	synchronization tester33_step_1 label "" {
+//		tester33."state_1" ;
+//		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+//		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+//	}
+//     //GET_WRITE_WAIT
+//     synchronization tester33_step_2 label "" {
+//		tester33."state_2" ;
+//		self."write_MCL1DTACK" ; 
+//		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+//	}
+//     // WRITE_WAIT
+//     synchronization tester33_step_3 label "" {
+//		tester33."state_3" ;
+//		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+//		self."read_MEMMCDTACK";
+//	}
+//   	//VALID_MULTICAST
+//     synchronization tester33_step_4 label "" {
+//		tester33."state_4" ;
+//		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+//		self."read_L1MCDTREQ" ;
+//	}
+//	//VALID_MULTICAST_UPDATE
+//  //1
+//    synchronization tester33_step_5 label "" {
+//		tester33."state_5" ;
+//		self."write_MCL1CPREQ" ;
+//		chan_MCL1CPREQ."read" (0, 0, $M_UP) ;
+//	}
+////  //2  
+////    synchronization tester33_step_6 label "" {
+////		tester33."state_6" ;
+////		chan_L1MCCPACK."write" (0,0, $ACK_M_UP) ; 
+////		self."read_L1MCDTREQ" ;
+////	}
+//    //VALID_MULTICAST_UPDATE
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE
+   synchronization tester34_step_0 label "" {
+		tester34."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester34_step_1 label "" {
+		tester34."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester34_step_2 label "" {
+		tester34."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester34_step_3 label "" {
+		tester34."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+     //VALID_MULTICAST 
+    synchronization tester34_step_4 label "" {
+		tester34."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+	 synchronization tester34_step_5 label "" {
+		tester34."state_5" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+		self."read_L1MCCPACK";
+	}
+	//VALID_MULTICAST_UPDATE_CLNUP
+	 synchronization tester34_step_6 label "" {
+		tester34."state_6" ;
+		self."write_MCL1CLACK" ;
+		chan_MCL1CLACK."read" (0, 0, $CLACK) ;
+	}
+	//VALID_MULTICAST_UPDATE
+	
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE_CLNUP
+	synchronization tester35_step_0 label "" {
+		tester35."state_0" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+	}
+	synchronization tester35_step_1 label "" {
+		tester35."state_1" ;
+		self."read_L1MCDTREQ_write_MCMEMDTREQ" ;
+		chan_MCMEMDTREQ."read" ( 0, $GET) ; 
+	}
+     //GET_WRITE_WAIT
+     synchronization tester35_step_2 label "" {
+		tester35."state_2" ;
+		self."write_MCL1DTACK" ; 
+		chan_MCL1DTACK."read" (0, 0, $ACK_WR) ;
+	}
+     // WRITE_WAIT
+     synchronization tester35_step_3 label "" {
+		tester35."state_3" ;
+		chan_MEMMCDTACK."write" ( 0, $ACK_GET) ; 
+		self."read_MEMMCDTACK";
+	}
+		//VALID_MULTICAST
+     synchronization tester35_step_4 label "" {
+		tester35."state_4" ;
+		chan_L1MCDTREQ."write" (0,0, $WR) ; 
+		self."read_L1MCDTREQ" ;
+	}
+	//VALID_MULTICAST_UPDATE
+	 synchronization tester35_step_5 label "" {
+		tester35."state_5" ;
+		chan_L1MCCPACK."write" (0,0, $CLNUP) ;
+		self."read_L1MCCPACK";
+	}
+	//VALID_MULTICAST_UPDATE_CLNUP
+	
+	//VALID_MULTICAST_UPDATE_CLNUP
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+ // read_channal_write_channel
+     synchronization read_L1MCDTREQ_write_MCMEMDTREQ (id_t $id, addr_t $addr, type_t $type1, type_t $type2) label "c_read_L1MCDTREQ_write_MCMEMDTREQ" ($id, $addr, $type1, $type2) {
+		chan_L1MCDTREQ."read" ($id,$addr, $type1) ; // RD ou WR
+		chan_MCMEMDTREQ."write" ($addr, $type2) ; // GET ou PUT
+	}
+     synchronization read_L1MCDTREQ_write_MCL1DTACK (id_t $id, addr_t $addr, type_t $type1, type_t $type2) label "c_read_L1MCDTREQ_write_MCL1DTACK" ($id, $addr, $type1, $type2) {
+		chan_L1MCDTREQ."read" ($id,$addr, $type1) ; // RD ou WR
+		chan_MCL1DTACK."write" ($id, $addr, $type2) ; // ACK_RD ou ACK_WR
+	}
+	
+	synchronization read_MEMMCDTACK_write_MCL1DTACK (id_t $id, addr_t $addr, type_t $type1, type_t $type2) label "c_read_MEMMCDTACK_write_MCL1DTACK" ($id, $addr, $type1, $type2) {
+		chan_MEMMCDTACK."read" ($addr, $type1) ; // ACK_GET 
+		chan_MCL1DTACK."write" ($id, $addr, $type2) ; // ACK_WR
+	}
+	synchronization read_L1MCDTREQ (id_t $id, addr_t $addr, type_t $type) label "c_read_L1MCDTREQ" ($id, $addr, $type) {
+		chan_L1MCDTREQ."read" ($id,$addr, $type) ; // RD ou WR
+	}
+	synchronization write_MCL1DTACK (id_t $id, addr_t $addr, type_t $type) label "c_write_MCL1DTACK" ($id, $addr, $type) {
+		chan_MCL1DTACK."write" ($id,$addr,$type) ; // ACK_RD ou ACK_WR
+	}
+	synchronization read_L1MCCPACK (id_t $id, addr_t $addr, type_t $type) label "c_read_L1MCCPACK" ($id, $addr, $type) {
+		chan_L1MCCPACK."read" ($id,$addr, $type) ; // CLNUP
+	}
+	synchronization write_MCL1CLACK (id_t $id, addr_t $addr, type_t $type) label "c_write_MCL1CLACK" ($id, $addr, $type) {
+		chan_MCL1CLACK."write" ($id,$addr, $type) ; // CLACK
+	}
+	synchronization read_MCL1CLACK (id_t $id, addr_t $addr, type_t $type) label "c_read_MCL1CLACK" ($id, $addr, $type) {
+		chan_MCL1CLACK."read" ($id,$addr, $type) ; // CLACK
+	}
+	synchronization read_L1MCCPACK_write_MCL1CLACK (id_t $id, addr_t $addr, type_t $type1, type_t $type2) label "c_read_L1MCCPACK_write_MCL1CLACK" ($id, $addr, $type1, $type2) {
+		chan_L1MCCPACK."read" ($id,$addr, $type1) ; // CLNUP 
+		chan_MCL1CLACK."write" ($id, $addr, $type2) ; // CLACK
+	}
+	synchronization write_MCL1CPREQ (id_t $id, addr_t $addr, type_t $type) label "c_write_MCL1CPREQ" ($id, $addr, $type) {
+		chan_MCL1CPREQ."write" ($id,$addr, $type) ; // B_INV ou M_UP ou M_INV
+	}
+	synchronization write_MCMEMDTREQ ( addr_t $addr, type_t $type) label "c_write_MCMEMDTREQ" ($addr, $type) {
+		chan_MCMEMDTREQ."write" ($addr, $type) ; // PUT
+	}
+	synchronization read_MEMMCDTACK (addr_t $addr, type_t $type) label "c_read_MEMMCDTACK" ($addr, $type) {
+		chan_MEMMCDTACK."read" ($addr, $type) ; // ACK_PUT ou ACK_GET
+	}
+	
+//MC	
+    synchronization MC_Empty_ReadWait (id_t $id, addr_t $addr) label "read_L1MCDTREQ_write_MCMEMDTREQ" {
+		mc0."Empty_ReadWait" ;
+		mc0."read_ligne_addr" ($addr) ;
+	    self."c_read_L1MCDTREQ_write_MCMEMDTREQ"($id,$addr,$RD,$GET);
+	//	chan_L1MCDTREQ."read" ($id, $addr, 4) ; //RD
+	//	chan_MCMEMDTREQ."write" ($addr, 16) ; //GET
+		mc0."write_src_save" ($id) ;
+	}
+	synchronization MC_Empty_GetWriteWait (id_t $id, addr_t $addr) label "read_L1MCDTREQ_write_MCMEMDTREQ" {
+		mc0."Empty_GetWriteWait" ;	
+		mc0."read_ligne_addr" ($addr) ;
+	    self."c_read_L1MCDTREQ_write_MCMEMDTREQ"($id,$addr,$WR,$GET);	
+	//	chan_L1MCDTREQ."read" ($id, $addr, 5) ; //WR
+	//	chan_MCMEMDTREQ."write" ($addr, 16) ; //GET
+		mc0."write_src_save" ($id) ;
+		mc0."write_dirty" (1) ; //dirty = 1
+
+	}
+	synchronization MC_GetWriteWait_WriteWait (id_t $id, addr_t $addr) label "write_MCL1DTACK" {
+		mc0."GetWriteWait_WriteWait" ;
+		mc0."read_src_save" ($id) ;
+	    self."c_write_MCL1DTACK"($id,$addr,$ACK_WR);
+	//	chan_MCL1DTACK."write" ($id, $addr, 7) ; //ACK_WR
+		mc0."write_src_save" (0) ;
+		mc0."read_ligne_addr" ($addr) ;
+	}
+	synchronization MC_WriteWait_ValidMulticast (addr_t $addr) label "read_MEMMCDTACK" {
+		mc0."WriteWait_ValidMulticast" ;
+		mc0."read_ligne_addr" ($addr) ;
+		self."c_read_MEMMCDTACK"($addr,$ACK_GET);
+		//chan_MEMMCDTACK."read" ($addr, 18) ; //ACK_GET
+		mc0."write_n_copies" (0) ;
+	}
+	synchronization MC_ReadWait_ReadWait (id_t $id, addr_t $addr) label "read_L1MCDTREQ_write_MCL1DTACK" {
+		mc0."ReadWait_ReadWait" ;
+		mc0."read_ligne_addr" ($addr) ;
+		self."c_read_L1MCDTREQ_write_MCL1DTACK"($id,$addr,$WR,$ACK_WR);
+	//	chan_L1MCDTREQ."read" ($id, $addr, 5) ; // WR
+	//	chan_MCL1DTACK."write" ($id, $addr, 7) ; //ACK_WR
+		mc0."write_dirty" (1) ;
+	}
+ 
+	synchronization MC_ReadWait_ValidMulticast (id_t $id, addr_t $addr) label "read_MEMMCDTACK_write_MCL1DTACK" {
+		mc0."ReadWait_ValidMulticast" ;
+		mc0."read_ligne_addr" ($addr) ;
+		mc0."read_src_save" ($id) ;
+		self."c_read_MEMMCDTACK_write_MCL1DTACK"($id,$addr,$ACK_GET,$ACK_WR);
+	//	chan_MEMMCDTACK."read" ($addr, 18) ; // ACK_GET
+	//	chan_MCL1DTACK."write" ($id, $addr, 6) ; //ACK_WR
+		mc0."write_src_save" (0) ;
+		mc0."write_n_copies" (1) ;
+		//c_id[0] = src_save, v_c_id[0] = 1,
+		mc0."write_c_id"(0,$id);
+		mc0."write_v_c_id"(0,1);
+	}
+	
+	synchronization MC_ValidMulticast_ValidMulticastRead (id_t $id, addr_t $addr) label "read_L1MCDTREQ" {
+		mc0."ValidMulticast_ValidMulticastRead" ;
+		mc0."read_ligne_addr" ($addr) ;
+	    self."c_read_L1MCDTREQ"($id,$addr,$RD);
+	//  chan_L1MCDTREQ."read" ($id, $addr, 4) ; //RD
+		// n_copies_0 < CACHE_TH
+		mc0."check_n_copies_less_than_CACHE_TH" ;
+		mc0."write_src_save" ($id) ;
+	}
+
+//	// 995   
+//	synchronization MC_ValidMulsticastRead_ValidMulticastRead (cpt_t $cpt) label "" {
+//		mc0."ValidMulticastRead_ValidMulticastRead" ;
+//		mc0."check_cpt_less_than_CACHE_TH" ;  
+//		mc0."read_cpt"($cpt);
+//		mc0."check_v_c_id" ($cpt, 1) ;
+//		mc0."addition_cpt" ;
+//		//	 guard (cpt < 2 && v_c_id[cpt] == 1);
+//		//    effect cpt = cpt + 1; 
+//
+//	}
+	synchronization MC_ValidMulsticastRead_ValidMulticast1 (id_t $id, addr_t $addr, cpt_t $cpt) label "write_MCL1DTACK" {
+		mc0."ValidMulticastRead_ValidMulticast" ;
+		mc0."check_cpt_less_than_CACHE_TH" ;
+		mc0."read_cpt"($cpt);
+		mc0."check_v_c_id" ($cpt, 0) ;
+		mc0."read_src_save" ($id) ;
+		mc0."read_ligne_addr" ($addr) ;
+	    self."c_write_MCL1DTACK"($id,$addr,$ACK_RD);
+	//	chan_MCL1DTACK."write" ($id, $addr, 6) ;
+		mc0."write_c_id" ($cpt, $id) ;
+		mc0."write_v_c_id" ($cpt, 1) ;
+		mc0."addition_n_copies" ;
+		mc0."write_cpt" (0) ;
+		mc0."write_src_save" (0) ;
+	}
+	synchronization MC_ValidMulsticastRead_ValidMulticast2 label "" {
+		mc0."ValidMulticastRead_ValidMulticast" ;
+		mc0."check_cpt_equel_to_CACHE_TH" ;
+		v."write_error" (1) ;
+	}
+	synchronization MC_ValidMulsticast_ValidBroadcastInit (id_t $id, addr_t $addr) label "read_L1MCDTREQ_write_MCL1DTACK" {
+		mc0."ValidMulticast_ValidBroadcastInit" ;
+		mc0."read_ligne_addr" ($addr) ;
+		self."c_read_L1MCDTREQ_write_MCL1DTACK"($id,$addr,$RD,$ACK_RD);
+	//	chan_L1MCDTREQ."read" ($id, $addr, 4) ;
+	//	chan_MCL1DTACK."write" ($id, $addr, 6) ;
+		mc0."check_n_copies_more_than_CACHE_TH" ;
+		mc0."addition_n_copies" ;
+	}
+	
+//	synchronization MC_ValidBroadcastInit_ValidBroadcastInit (cpt_t $cpt) label "" {
+//		mc0."ValidBroadcastInit_ValidBroadcastInit" ;
+//		mc0."check_cpt_less_than_CACHE_TH" ;
+//		mc0."read_cpt"($cpt);
+//		mc0."write_v_c_id" ($cpt, 0) ;
+//		mc0."addition_cpt" ;
+//		mc0."write_c_id" ($cpt, 0) ;
+//	}
+//	synchronization MC_ValidBroadcastInit_ValidBroadcast label "" {
+//		mc0."ValidBroadcastInit_ValidBroadcast" ;
+//		mc0."check_cpt_equel_to_CACHE_TH";
+//		mc0."write_cpt"(0);
+//	}
+    
+    synchronization MC_ValidMulticast_ValidMulticastUpdate (id_t $id, addr_t $addr) label "read_L1MCDTREQ" {
+		mc0."ValidBroadcastInit_ValidBroadcast" ;
+		mc0."read_ligne_addr"($addr);
+	    self."c_read_L1MCDTREQ"($id,$addr,$WR);
+	//	chan_L1MCDTREQ."read"($id,$addr,5); //WR
+		mc0."write_dirty"(1);
+		mc0."write_src_save"($id);
+		mc0."check_n_copies_not_empty";
+		//n_copies_0 > 0
+	}
+	
+    synchronization MC_ValidMulticast_ValidMulticast (id_t $id, addr_t $addr) label "read_L1MCDTREQ_write_MCL1DTACK" {
+		mc0."ValidMulticast_ValidMulticast" ;
+        mc0."check_n_copies_empty";
+        mc0."read_ligne_addr"($addr);
+        self."c_read_L1MCDTREQ_write_MCL1DTACK"($id,$addr,$WR,$ACK_WR);   
+   //   chan_L1MCDTREQ."read"($id,$addr,5); //WR
+   //   chan_MCL1DTACK."write"($id,$addr,7); //ACK_WR
+        mc0."write_dirty"(1);
+	}
+	
+//1035?
+	 synchronization MC_ValidMulticastUpdate_ValidMulticastUpdate1 (id_t $id, addr_t $addr,cpt_t $cpt) label "write_MCL1CPREQ" {
+		mc0."ValidMulticastUpdate_ValidMulticastUpdate" ;   
+        mc0."check_cpt_less_than_CACHE_TH";
+        mc0."read_cpt"($cpt);
+        mc0."check_c_id_unequal"($cpt,$id);//c_id[cpt] != src_save
+        mc0."read_src_save"($id);
+        mc0."check_v_c_id"($cpt,1); //v_c_id[cpt] == 1)
+        mc0."read_ligne_addr"($addr);
+        self."c_write_MCL1CPREQ"($id,$addr,$M_UP);
+   //  chan_MCL1CPREQ."write"($id,$addr,12); //M_UP
+        mc0."addition_rsp_cpt";
+        mc0."addition_cpt";
+	}
+    
+    synchronization MC_ValidMulticastUpdate_ValidMulticastUpdate2 (id_t $id, addr_t $addr) label "read_L1MCCPACK" {
+		mc0."ValidMulticastUpdate_ValidMulticastUpdate" ;
+        mc0."check_rsp_cpt_not_empty"; // rsp_cpy > 0
+        mc0."read_ligne_addr"($addr);
+        self."c_read_L1MCCPACK"($id,$addr,$ACK_M_UP);
+  //    chan_L1MCCPACK."read"($id,$addr,15);  // ACK_M_UP
+        mc0."substraction_rsp_cpt";
+	}
+    
+//    synchronization MC_ValidMulticastUpdate_UpdateWait label "" {
+//		mc0."ValidMulticastUpdate_UpdateWait" ;
+//        mc0."check_cpt_equel_to_CACHE_TH";
+//        mc0."write_cpt"(0);
+//	}
+    
+//    synchronization MC_ValidMulticastUpdate_ValidMulticastUpdate( id_t $id, cpt_t $cpt) label "" {
+//		mc0."ValidMulticastUpdate_ValidMulticastUpdate" ;
+//        mc0."check_cpt_less_than_CACHE_TH";
+//        mc0."check_c_id_equal"($cpt,$id);
+//        mc0."read_cpt"($cpt);
+//        mc0."read_src_save"($id);
+//        mc0."check_v_c_id"($cpt,0);
+//        mc0."addition_cpt";
+//	}
+//	
+	 synchronization MC_ValidMulticastUpdate_ValidMulticastUpdateClnup( id_t $id,addr_t $addr) label "read_L1MCCPACK" {
+		mc0."ValidMulticastUpdate_ValidMulticastUpdateClnup" ;
+		mc0."read_ligne_addr"($addr);
+		self."c_read_L1MCCPACK"($id,$addr,$CLNUP);
+	//	chan_L1MCCPACK."read"($id,$addr,8); //CLNUP	
+		mc0."write_src_save_clnup"($id);
+        
+     }
+     
+      synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdate1( id_t $id,addr_t $addr) label "write_MCL1CLACK" {
+		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdate" ;
+        mc0."check_cpt_clnup_equel_to_CACHE_TH";
+        mc0."read_ligne_addr"($addr);
+        mc0."read_src_save_clnup"($id);
+        self."c_write_MCL1CLACK"($id,$addr,$CLACK);
+    //  chan_MCL1CLACK."write"($id,$addr,9); // CLACK
+        mc0."write_src_save_clnup"(0);
+        mc0."write_cpt_clnup"(0);
+     }
+     
+     synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdate2( id_t $id,addr_t $addr,cpt_t $cpt) label "read_MCL1CLACK" {
+		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdate" ;
+		mc0."check_cpt_clnup_less_than_CACHE_TH";
+		mc0."read_cpt_clnup"($cpt);
+		mc0."check_v_c_id"($cpt,1);
+		mc0."check_c_id_equal"($cpt,$id);
+		mc0."read_src_save_clnup"($id);
+	    self."c_read_MCL1CLACK"($id,$addr,$CLACK);
+	//	chan_MCL1CLACK."read"($id,$addr,9); //ACK_CLNUP
+		mc0."write_v_c_id"($cpt,0);
+		mc0."write_c_id"($cpt,0);
+		mc0."substraction_n_copies";
+		mc0."write_src_save_clnup"(0);
+     }
+//      synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdateClnup1( cpt_t $cpt) label "" {
+//		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdateClnup" ;
+//		mc0."check_cpt_clnup_less_than_CACHE_TH";
+//		mc0."read_cpt_clnup"($cpt);
+//		mc0."check_v_c_id"($cpt,0);  //v_c_id[cpt_clnup] != 1
+//		mc0."addition_cpt_clnup";
+//     }
+//     synchronization MC_ValidMulticastUpdateClnup_ValidMulticastUpdateClnup2 ( id_t $id,cpt_t $cpt) label "" {
+//		mc0."ValidMulticastUpdateClnup_ValidMulticastUpdateClnup" ;
+//		mc0."check_cpt_clnup_less_than_CACHE_TH";
+//		mc0."read_cpt_clnup"($cpt);
+//		mc0."read_src_save_clnup"($id);
+//		mc0."check_c_id_unequal"($cpt,$id);  //c_id[cpt_clnup] != src_save_clnup
+//		mc0."addition_cpt_clnup";
+//     }
+      synchronization MC_ValidMulticast_ValidMulticastClnup ( id_t $id,addr_t $addr) label "read_L1MCCPACK" {
+		mc0."ValidMulticast_ValidMulticastClnup" ;
+		mc0."read_ligne_addr"($addr);
+		self."c_read_L1MCCPACK"($id,$addr,$CLNUP);
+	//  chan_L1MCCPACK."read"($id,$addr,8); //CLNUP
+		mc0."write_src_save"($id);
+     }
+	synchronization MC_ValidMulticastClnup_ValidMulticast1 ( id_t $id,addr_t $addr) label "write_MCL1CLACK" {
+		mc0."ValidMulticastClnup_ValidMulticast" ;
+		mc0."check_cpt_equel_to_CACHE_TH";
+		mc0."read_ligne_addr"($addr);
+		mc0."read_src_save"($id);
+		self."c_write_MCL1CLACK"($id,$addr,$CLACK);	
+   //	chan_MCL1CLACK."write"($id,$addr,9);
+		v."write_error"(1);
+		mc0."write_src_save"(0);
+     }   
+     
+     synchronization MC_ValidMulticastClnup_ValidMulticast2 ( cpt_t $cpt) label "" {
+		mc0."ValidMulticastClnup_ValidMulticast" ;
+		mc0."check_cpt_less_than_CACHE_TH";
+		mc0."check_v_c_id"($cpt,0); //v_c_id[cpt] != 1
+		mc0."addition_cpt";
+     }   
+    	
+//	synchronization MC_ValidMulticastClnup_ValidMulticastClnup ()label ""{
+//		
+//  guard (cpt < 2 && (v_c_id[cpt] != 1 || c_id[cpt] != src_save));
+//  effect cpt = cpt + 1;   
+//	}
+	 synchronization MC_UpdateWait_UpdateWait ( id_t $id,addr_t $addr) label "read_L1MCCPACK" {
+       mc0."UpdateWait_UpdateWait";
+       mc0."check_rsp_cpt_not_empty";
+       mc0."read_ligne_addr"($addr);
+       self."c_read_L1MCCPACK"($id,$addr,$ACK_M_UP);
+       mc0."substraction_rsp_cpt";
+     } 
+	
+	 synchronization MC_UpdateWait_UpdateWaitClnup ( id_t $id,addr_t $addr) label "read_L1MCCPACK" {
+	    mc0."UpdateWait_UpdateWaitClnup";
+	    mc0."read_ligne_addr"($addr);
+	    self."c_read_L1MCCPACK"($id,$addr,$CLNUP);
+	    mc0."write_src_save_clnup"($id);
+     } 
+     
+      synchronization MC_UpdateWaitClnup_UpdateWait ( id_t $id,addr_t $addr,cpt_t $cpt) label "write_MCL1CLACK" {
+	   mc0."UpdateWaitClnup_UpdateWait";
+	   mc0."check_cpt_less_than_CACHE_TH";
+	   mc0."read_cpt"($cpt);
+	   mc0."check_v_c_id"($cpt,1);
+	   mc0."read_src_save_clnup"($id);
+	   mc0."check_c_id_equal"($cpt,$id);
+	   mc0."read_ligne_addr"($addr);
+	   self."c_write_MCL1CLACK"($id,$addr,$CLACK);
+	   mc0."write_v_c_id"($cpt,0);
+	   mc0."write_c_id"($cpt,0);
+	   mc0."substraction_n_copies";
+	   mc0."write_cpt"(0);
+	   mc0."write_src_save_clnup"(0);
+     }
+     
+//      synchronization MC_UpdateWaitClnup_UpdateWaitClnup ( id_t $id,addr_t $addr) label "read_L1MCCPACK" {
+//	   mc0."UpdateWaitClnup_UpdateWaitClnup";
+//	   
+//     }  
+     
+     synchronization MC_UpdateWait_ValidMulticast ( id_t $id,addr_t $addr) label "read_MCL1DTACK" {
+	   mc0."UpdateWait_ValidMulticast";
+	   mc0."check_rsp_cpt_empty";
+	   mc0."read_ligne_addr"($addr);
+	   mc0."read_src_save"($id);
+	   self."c_write_MCL1DTACK"($id,$addr,$ACK_WR);
+	   mc0."write_src_save"(0);
+	   
+     }  
+     
+     synchronization MC_ValidBroadcast_ValidBroadcast1 ( id_t $id,addr_t $addr) label "read_L1MCDTREQ_write_MCL1DTACK" {
+	   mc0."ValidBroadcast_ValidBroadcast";
+	   mc0."read_ligne_addr"($addr);
+	   self."c_read_L1MCDTREQ_write_MCL1DTACK"($id,$addr,$RD,$ACK_RD);
+	   mc0."addition_n_copies";  
+     }       
+     
+     synchronization MC_ValidBroadcast_ValidBroadcast2 ( id_t $id,addr_t $addr) label "read_L1MCDTREQ_write_MCL1DTACK" {
+      mc0."ValidBroadcast_ValidBroadcast";
+      mc0."read_ligne_addr"($addr);
+      mc0."check_n_copies_not_empty";
+      self."c_read_L1MCDTREQ_write_MCL1DTACK"($id,$addr,$WR,$ACK_WR);
+      mc0."write_dirty"(1);
+     }  
+     
+//      synchronization MC_ValidBroadcastInv_BroadcastInvWait ( id_t $id,addr_t $addr) label "" {
+//	   mc0."ValidBroadcastInv_BroadcastInvWait";
+//	   
+//     } 
+//     
+	 synchronization MC_ValidBroadcastInv_ValidBroadcastInv1 ( id_t $id,addr_t $addr) label "write_MCL1CPREQ" {
+      mc0."ValidBroadcastInv_ValidBroadcastInv";
+      mc0."check_cpt_less_than_NB_CACHES";
+      mc0."read_cpt"($id);
+      mc0."read_ligne_addr"($addr);
+      self."c_write_MCL1CPREQ"($id,$addr,$B_INV);
+      mc0."addition_cpt";
+     }  
+      
+      synchronization MC_ValidBroadcastInv_ValidBroadcastInv2 ( id_t $id,addr_t $addr) label "read_L1MCCPACK_write_MCL1CLACK" {
+      mc0."ValidBroadcastInv_ValidBroadcastInv";
+      mc0."check_rsp_cpt_not_empty";
+      mc0."read_ligne_addr"($addr);
+      self."c_read_L1MCCPACK_write_MCL1CLACK"($id,$addr,$CLNUP,$CLACK);
+      mc0."substraction_rsp_cpt";
+  
+     } 
+     
+    synchronization MC_ValidBroadcast_ValidBroadcast ( id_t $id,addr_t $addr) label "read_L1MCCPACK_write_MCL1CLACK" {
+      mc0."ValidBroadcast_ValidBroadcast";
+      mc0."read_ligne_addr"($addr);   
+      self."c_read_L1MCCPACK_write_MCL1CLACK"($id,$addr,$CLNUP,$CLACK);
+      mc0."substraction_n_copies";
+     } 
+     
+     synchronization MC_BroadcastInvWait_BroadcastInvWait ( id_t $id,addr_t $addr) label "read_L1MCCPACK_write_MCL1CLACK" {
+      mc0."BroadcastInvWait_BroadcastInvWait";
+      mc0."check_rsp_cpt_not_empty";
+      mc0."read_ligne_addr"($addr);   
+      self."c_read_L1MCCPACK_write_MCL1CLACK"($id,$addr,$CLNUP,$CLACK);
+      mc0."substraction_rsp_cpt";
+     } 
+     
+     synchronization MC_BroadcastInvWait_BroadcastInvPut ( id_t $id,addr_t $addr) label "write_MCL1DTACK" {
+      mc0."BroadcastInvWait_BroadcastInvPut";
+      mc0."check_rsp_cpt_empty";
+      mc0."read_ligne_addr"($addr); 
+      mc0."read_src_save"($id);
+      self."c_write_MCL1DTACK"($id,$addr,$ACK_WR);
+      mc0."write_src_save"(0);
+     } 
+     
+     synchronization MC_BroadcastInvWait_PutWait ( addr_t $addr) label "write_MCMEMDTREQ" {
+      mc0."BroadcastInvPut_PutWait";
+      mc0."check_rsp_cpt_empty";
+      mc0."read_ligne_addr"($addr);  
+      self."c_write_MCMEMDTREQ"($addr,$PUT);
+      mc0."write_cpt"(0);
+     } 
+      
+      synchronization MC_PutWait_Empty ( addr_t $addr) label "read_MEMMCDTACK" {
+      mc0."PutWait_Empty";
+      mc0."read_ligne_addr"($addr);  
+      self."c_read_MEMMCDTACK"($addr,$ACK_PUT);
+     } 
+     
+}
+
+main c;
+
+
+
+
+
+//tester1:EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST
+property tester_1_success1 [reachable] : tester1:state == 1 ;
+property tester_1_success2 [reachable] : tester1:state == 2 ;
+property tester_1_success3 [reachable] : tester1:state == 3 ;
+property tester_1_success4 [reachable] : tester1:state == 4 ;   // marche pas
+property tester_1_success5 [reachable] : tester1:state == 5 ;
+property tester_1_success6 [reachable] : tester1:state == 6 ;
+
+
+
+//tester2:EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST
+property tester_2_success1 [reachable] : tester2:state == 1 ;   
+property tester_2_success2 [reachable] : tester2:state == 2 ;
+property tester_2_success3 [reachable] : tester2:state == 3 ;
+property tester_2_success4 [reachable] : tester2:state == 4 ;   // marche pas
+property tester_2_success5 [reachable] : tester2:state == 5 ;
+property tester_2_success6 [reachable] : tester2:state == 6 ;
+
+//tester3:EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST
+property tester_3_success1 [reachable] : tester3:state == 1 ; 
+property tester_3_success2 [reachable] : tester3:state == 2 ;
+property tester_3_success3 [reachable] : tester3:state == 3 ;
+property tester_3_success4 [reachable] : tester3:state == 4 ;   // marche pas
+property tester_3_success5 [reachable] : tester3:state == 5 ;
+property tester_3_success6 [reachable] : tester3:state == 6 ;
+
+//tester4:EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST_READ
+property tester_4_success1 [reachable] : tester4:state == 1 ;
+property tester_4_success2 [reachable] : tester4:state == 2 ;
+property tester_4_success3 [reachable] : tester4:state == 3 ;
+property tester_4_success4 [reachable] : tester4:state == 4 ;
+property tester_4_success5 [reachable] : tester4:state == 5 ;
+
+//tester5:EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST_CLNUP
+property tester_5_success1 [reachable] : tester5:state == 1 ;
+property tester_5_success2 [reachable] : tester5:state == 2 ;
+property tester_5_success3 [reachable] : tester5:state == 3 ;
+property tester_5_success4 [reachable] : tester5:state == 4 ;
+property tester_5_success5 [reachable] : tester5:state == 5 ;
+property tester_5_success6 [reachable] : tester5:state == 6 ;
+
+//tester6:EMPTY -> READ_WAIT -> READ_WAIT
+property tester_6_success1 [reachable] : tester6:state == 1 ;
+property tester_6_success2 [reachable] : tester6:state == 2 ;
+property tester_6_success3 [reachable] : tester6:state == 3 ;
+property tester_6_success4 [reachable] : tester6:state == 4 ;
+
+
+//tester7:EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> 
+property tester_7_success1 [reachable] : tester7:state == 1 ;
+property tester_7_success2 [reachable] : tester7:state == 2 ;
+property tester_7_success3 [reachable] : tester7:state == 3 ;
+property tester_7_success4 [reachable] : tester7:state == 4 ;
+property tester_7_success5 [reachable] : tester7:state == 5 ;
+property tester_7_success6 [reachable] : tester7:state == 6 ;
+
+//tester7_1:VALID_BROADCAST -> VALID_BROADCAST_INV ->
+property tester_7_1_success1 [reachable] : tester7_1:state == 1 ;
+
+//tester7_2: BROADCAST_INV_WAIT -> BROADCAST_INV_PUT -> PUT_WAIT -> EMPTY 
+property tester_7_2_success1 [reachable] : tester7_2:state == 1 ;
+property tester_7_2_success2 [reachable] : tester7_2:state == 2 ;
+property tester_7_2_success3 [reachable] : tester7_2:state == 3 ;
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_WAIT	   
+property tester_8_success1 [reachable] : tester8:state == 1 ;
+property tester_8_success2 [reachable] : tester8:state == 2 ;
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> VALID_BROADCAST_INV 	
+property tester_9_success1 [reachable] : tester9:state == 1 ;
+property tester_9_success2 [reachable] : tester9:state == 2 ;
+property tester_9_success3 [reachable] : tester9:state == 3 ;
+
+//VALID_BROADCAST -> VALID_BROADCAST 	
+property tester_10_1_success1 [reachable] : tester10_1:state == 1 ;
+property tester_10_1_success2 [reachable] : tester10_1:state == 2 ;
+
+property tester_10_2_success1 [reachable] : tester10_2:state == 1 ;
+property tester_10_2_success2 [reachable] : tester10_2:state == 2 ;
+
+property tester_10_3_success1 [reachable] : tester10_3:state == 1 ;
+property tester_10_3_success2 [reachable] : tester10_3:state == 2 ;
+
+
+////EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST_INIT
+//property tester_11_success1 [reachable] : tester11:state == 1 ;
+//property tester_11_success2 [reachable] : tester11:state == 2 ;
+//property tester_11_success3 [reachable] : tester11:state == 3 ;
+//property tester_11_success4 [reachable] : tester11:state == 4 ;
+//property tester_11_success5 [reachable] : tester11:state == 5 ;
+//property tester_11_success6 [reachable] : tester11:state == 6 ;
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> 
+property tester_12_success1 [reachable] : tester12:state == 1 ;
+property tester_12_success2 [reachable] : tester12:state == 2 ;
+property tester_12_success3 [reachable] : tester12:state == 3 ;
+property tester_12_success4 [reachable] : tester12:state == 4 ;
+property tester_12_success5 [reachable] : tester12:state == 5 ;
+
+//UPDATE_WAIT -> VALID_MULTICAST
+property tester_12_1_success1 [reachable] : tester12_1:state == 1 ;
+
+//UPDATE_WAIT -> UPDATE_WAIT
+property tester_13_success1 [reachable] : tester13:state == 1 ;
+
+
+//UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT
+property tester_14_success1 [reachable] : tester14:state == 1 ;
+property tester_14_success2 [reachable] : tester14:state == 2 ;
+
+
+
+////EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT_CLNUP
+//property tester_15_success1 [reachable] : tester15:state == 1 ;
+//property tester_15_success2 [reachable] : tester15:state == 2 ;
+//property tester_15_success3 [reachable] : tester15:state == 3 ;
+//property tester_15_success4 [reachable] : tester15:state == 4 ;
+//property tester_15_success5 [reachable] : tester15:state == 5 ;
+//property tester_15_success6 [reachable] : tester15:state == 6 ;
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE
+property tester_16_success1 [reachable] : tester16:state == 1 ;
+property tester_16_success2 [reachable] : tester16:state == 2 ;
+property tester_16_success3 [reachable] : tester16:state == 3 ;
+property tester_16_success4 [reachable] : tester16:state == 4 ;
+property tester_16_success5 [reachable] : tester16:state == 5 ;
+property tester_16_success6 [reachable] : tester16:state == 6 ;
+
+property tester_16_1_success1 [reachable] : tester16_1:state == 1 ;
+property tester_16_1_success2 [reachable] : tester16_1:state == 2 ;
+property tester_16_1_success3 [reachable] : tester16_1:state == 3 ;
+property tester_16_1_success4 [reachable] : tester16_1:state == 4 ;
+property tester_16_1_success5 [reachable] : tester16_1:state == 5 ;
+property tester_16_1_success6 [reachable] : tester16_1:state == 6 ;
+
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE
+property tester_17_success1 [reachable] : tester17:state == 1 ;
+property tester_17_success2 [reachable] : tester17:state == 2 ;
+property tester_17_success3 [reachable] : tester17:state == 3 ;
+property tester_17_success4 [reachable] : tester17:state == 4 ;
+property tester_17_success5 [reachable] : tester17:state == 5 ;
+property tester_17_success6 [reachable] : tester17:state == 6 ;
+property tester_17_success7 [reachable] : tester17:state == 7 ;
+
+//EMPTY -> READ_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE_CLNUP
+property tester_18_success1 [reachable] : tester18:state == 1 ;
+property tester_18_success2 [reachable] : tester18:state == 2 ;
+property tester_18_success3 [reachable] : tester18:state == 3 ;
+property tester_18_success4 [reachable] : tester18:state == 4 ;
+property tester_18_success5 [reachable] : tester18:state == 5 ;
+property tester_18_success6 [reachable] : tester18:state == 6 ;
+	
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST
+property tester_19_success1 [reachable] : tester19:state == 1 ;
+property tester_19_success2 [reachable] : tester19:state == 2 ;
+property tester_19_success3 [reachable] : tester19:state == 3 ;
+property tester_19_success4 [reachable] : tester19:state == 4 ;
+property tester_19_success5 [reachable] : tester19:state == 5 ;
+property tester_19_success6 [reachable] : tester19:state == 6 ;
+
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST
+property tester_20_success1 [reachable] : tester20:state == 1 ;
+property tester_20_success2 [reachable] : tester20:state == 2 ;
+property tester_20_success3 [reachable] : tester20:state == 3 ;
+property tester_20_success4 [reachable] : tester20:state == 4 ;
+property tester_20_success5 [reachable] : tester20:state == 5 ;
+property tester_20_success6 [reachable] : tester20:state == 6 ;
+
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST
+property tester_21_success1 [reachable] : tester21:state == 1 ;
+property tester_21_success2 [reachable] : tester21:state == 2 ;
+property tester_21_success3 [reachable] : tester21:state == 3 ;
+property tester_21_success4 [reachable] : tester21:state == 4 ;
+property tester_21_success5 [reachable] : tester21:state == 5 ;
+property tester_21_success6 [reachable] : tester21:state == 6 ;
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_READ -> VALID_MUTLICAST_READ
+property tester_22_success1 [reachable] : tester22:state == 1 ;
+property tester_22_success2 [reachable] : tester22:state == 2 ;
+property tester_22_success3 [reachable] : tester22:state == 3 ;
+property tester_22_success4 [reachable] : tester22:state == 4 ;
+property tester_22_success5 [reachable] : tester22:state == 5 ;
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_CLNUP -> VALID_MUTLICAST_CLNUP
+property tester_23_success1 [reachable] : tester23:state == 1 ;
+property tester_23_success2 [reachable] : tester23:state == 2 ;
+property tester_23_success3 [reachable] : tester23:state == 3 ;
+property tester_23_success4 [reachable] : tester23:state == 4 ;
+property tester_23_success5 [reachable] : tester23:state == 5 ;
+property tester_23_success6 [reachable] : tester23:state == 6 ;
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> 
+property tester_24_success1 [reachable] : tester24:state == 1 ;
+property tester_24_success2 [reachable] : tester24:state == 2 ;
+property tester_24_success3 [reachable] : tester24:state == 3 ;
+property tester_24_success4 [reachable] : tester24:state == 4 ;
+property tester_24_success5 [reachable] : tester24:state == 5 ;
+property tester_24_success6 [reachable] : tester24:state == 6 ;
+
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> BROADCAST_INV_WAIT -> BROADCAST_INV_WAIT	  
+//property tester_25_success1 [reachable] : tester25:state == 1 ;
+//property tester_25_success2 [reachable] : tester25:state == 2 ;
+//property tester_25_success3 [reachable] : tester25:state == 3 ;
+//property tester_25_success4 [reachable] : tester25:state == 4 ;
+//property tester_25_success5 [reachable] : tester25:state == 5 ;
+//property tester_25_success6 [reachable] : tester25:state == 6 ;
+//property tester_25_success7 [reachable] : tester25:state == 7 ;
+//property tester_25_success8 [reachable] : tester25:state == 8 ;
+//property tester_25_success9 [reachable] : tester25:state == 9 ; 
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST_INV -> VALID_BROADCAST_INV 
+//property tester_26_success1 [reachable] : tester26:state == 1 ;
+//property tester_26_success2 [reachable] : tester26:state == 2 ;
+//property tester_26_success3 [reachable] : tester26:state == 3 ;
+//property tester_26_success4 [reachable] : tester26:state == 4 ;
+//property tester_26_success5 [reachable] : tester26:state == 5 ;
+//property tester_26_success6 [reachable] : tester26:state == 6 ;
+//property tester_26_success7 [reachable] : tester26:state == 7 ;
+//property tester_26_success8 [reachable] : tester26:state == 8 ;
+//property tester_26_success9 [reachable] : tester26:state == 9 ;
+//	
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST -> VALID_BROADCAST 	
+//property tester_27_success1 [reachable] : tester27:state == 1 ;
+//property tester_27_success2 [reachable] : tester27:state == 2 ;
+//property tester_27_success3 [reachable] : tester27:state == 3 ;
+//property tester_27_success4 [reachable] : tester27:state == 4 ;
+//property tester_27_success5 [reachable] : tester27:state == 5 ;
+//property tester_27_success6 [reachable] : tester27:state == 6 ;
+//property tester_27_success7 [reachable] : tester27:state == 7 ;
+//property tester_27_success8 [reachable] : tester27:state == 8 ;
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_BROADCAST_INIT -> VALID_BROADCAST_INIT
+//property tester_28_success1 [reachable] : tester28:state == 1 ;
+//property tester_28_success2 [reachable] : tester28:state == 2 ;
+//property tester_28_success3 [reachable] : tester28:state == 3 ;
+//property tester_28_success4 [reachable] : tester28:state == 4 ;
+//property tester_28_success5 [reachable] : tester28:state == 5 ;
+//property tester_28_success6 [reachable] : tester28:state == 6 ;
+
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> 
+property tester_29_success1 [reachable] : tester29:state == 1 ;
+property tester_29_success2 [reachable] : tester29:state == 2 ;
+property tester_29_success3 [reachable] : tester29:state == 3 ;
+property tester_29_success4 [reachable] : tester29:state == 4 ;
+property tester_29_success5 [reachable] : tester29:state == 5 ;
+
+
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT
+//property tester_30_success1 [reachable] : tester30:state == 1 ;
+//property tester_30_success2 [reachable] : tester30:state == 2 ;
+//property tester_30_success3 [reachable] : tester30:state == 3 ;
+//property tester_30_success4 [reachable] : tester30:state == 4 ;
+//property tester_30_success5 [reachable] : tester30:state == 5 ;
+//property tester_30_success6 [reachable] : tester30:state == 6 ;
+//
+//
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT
+//property tester_31_success1 [reachable] : tester31:state == 1 ;
+//property tester_31_success2 [reachable] : tester31:state == 2 ;
+//property tester_31_success3 [reachable] : tester31:state == 3 ;
+//property tester_31_success4 [reachable] : tester31:state == 4 ;
+//property tester_31_success5 [reachable] : tester31:state == 5 ;
+//property tester_31_success6 [reachable] : tester31:state == 6 ;
+//property tester_31_success7 [reachable] : tester31:state == 7 ;
+//
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> UPDATE_WAIT -> UPDATE_WAIT_CLNUP -> UPDATE_WAIT_CLNUP
+//property tester_32_success1 [reachable] : tester32:state == 1 ;
+//property tester_32_success2 [reachable] : tester32:state == 2 ;
+//property tester_32_success3 [reachable] : tester32:state == 3 ;
+//property tester_32_success4 [reachable] : tester32:state == 4 ;
+//property tester_32_success5 [reachable] : tester32:state == 5 ;
+//property tester_32_success6 [reachable] : tester32:state == 6 ;
+//
+//
+////EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE
+//property tester_33_success1 [reachable] : tester33:state == 1 ;
+//property tester_33_success2 [reachable] : tester33:state == 2 ;
+//property tester_33_success3 [reachable] : tester33:state == 3 ;
+//property tester_33_success4 [reachable] : tester33:state == 4 ;
+//property tester_33_success5 [reachable] : tester33:state == 5 ;
+//property tester_33_success6 [reachable] : tester33:state == 6 ;
+
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE
+property tester_34_success1 [reachable] : tester34:state == 1 ;
+property tester_34_success2 [reachable] : tester34:state == 2 ;
+property tester_34_success3 [reachable] : tester34:state == 3 ;
+property tester_34_success4 [reachable] : tester34:state == 4 ;
+property tester_34_success5 [reachable] : tester34:state == 5 ;
+property tester_34_success6 [reachable] : tester34:state == 6 ;
+property tester_34_success7 [reachable] : tester34:state == 7 ;
+
+	
+//EMPTY -> GET_WRITE_WAIT -> WRITE_WAIT -> VALID_MULTICAST -> VALID_MULTICAST_UPDATE -> VALID_MULTICAST_UPDATE_CLNUP -> VALID_MULTICAST_UPDATE_CLNUP
+property tester_35_success1 [reachable] : tester35:state == 1 ;
+property tester_35_success2 [reachable] : tester35:state == 2 ;
+property tester_35_success3 [reachable] : tester35:state == 3 ;
+property tester_35_success4 [reachable] : tester35:state == 4 ;
+property tester_35_success5 [reachable] : tester35:state == 5 ;
+property tester_35_success6 [reachable] : tester35:state == 6 ;
+
+	

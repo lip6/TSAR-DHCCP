@@ -1,0 +1,74 @@
+$DT_RD = 0 ;
+$DT_WR = 1 ;
+$ACK_DT_RD = 2 ;
+$ACK_DT_WR = 3 ;
+$RD = 0 ;
+$WR = 1 ;
+$ACK_RD = 2 ;
+$ACK_WR = 3 ;
+$CLNUP = 8 ;
+$CLACK = 9 ;
+$B_INV = 10 ;
+$M_INV = 11 ;
+$M_UP = 12 ;
+$ACK_M_UP = 13 ;
+$GET = 14 ;
+$PUT = 15 ;
+$ACK_GET = 16 ;
+$ACK_PUT = 17 ;
+
+$INIT = 0;
+$L1_EMPTY = 1 ;
+$L1_MISS = 2 ;
+$L1_MISS_WAIT = 3 ;
+$L1_MISS_RETRY = 4 ;
+$L1_MISS_CLNUP = 5 ;
+$L1_VALID_DATA = 6 ;
+$L1_WRITE_WAIT_VALID = 7 ;
+$L1_WRITE_WAIT_EMPTY = 8 ;
+$L1_MISS_M_UP = 9 ;
+$L1_MISS_TO_RETRY = 10 ;
+$L1_ZOMBIE = 11 ;
+$L1_WRITE_WAIT_CLACK = 12 ;
+$L1_WRITE_WAIT_CLACK2 = 13 ;
+$L1_MISS_RETRY_RD = 14 ;
+
+$MC_EMPTY = 17 ;
+$MC_READ_WAIT = 18 ;
+$MC_GET_WRITE_WAIT = 19 ;
+$MC_WRITE_WAIT = 20 ;
+$MC_VALID_MULTICAST = 21 ;
+$MC_VALID_MULTICAST_CLNUP = 22 ;
+$MC_VALID_BROADCAST = 23 ;
+$MC_VALID_MULTICAST_UPDATE = 24 ;
+$MC_VALID_BROADCAST_INV = 25 ;
+$MC_UPDATE_WAIT = 26 ;
+$MC_UPDATE_WAIT_CLNUP = 27 ;
+$MC_BROADCAST_INV_WAIT = 28 ;
+$MC_BROADCAST_INV_PUT = 29 ;
+$MC_PUT_WAIT = 30 ;
+$MC_VALID_BROADCAST_INIT = 31 ;
+$MC_VALID_MULTICAST_READ = 32 ;
+$MC_VALID_MULTICAST_UPDATE_CLNUP = 33 ;
+
+$PROC_IDLE = 0;
+$PROC_WAIT_READ = 1;
+$PROC_WAIT_WRITE = 2;  
+
+
+//$MEM_IDLE = 0;
+//$MEM_GET = 1;
+//$MEM_PUT = 2;
+
+$NBMEM = 1 ;
+$NB_CACHES = 1 ;
+$CACHE_TH = 2 ;
+
+typedef addr_t = 0 .. $NBMEM - 1 ;
+typedef type_t = 0 .. 19 ;
+typedef id_t = 0 .. $NB_CACHES - 1 ;
+typedef isfull_t = 0..1;
+typedef dirty_t = 0 .. 1 ;
+typedef copie_t = 0 .. $NB_CACHES ;
+typedef cpt_t = 0 .. $CACHE_TH ;
+typedef valid_t = 0 .. 1 ;

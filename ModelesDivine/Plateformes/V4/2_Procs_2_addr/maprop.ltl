@@ -1,0 +1,5 @@
+
+#define no_error (error == 0)
+
+#property G(no_error)
+
