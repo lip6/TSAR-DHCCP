@@ -1,4 +1,5 @@
 # TSAR-DHCCP
+
 Verification of the Distributed Hybrid Cache Coherence protocol of the TeraScale Architecture
 
 This repository contains formal models of the [DHCCP](https://www-soc.lip6.fr/trac/tsar/wiki/CacheCoherence) protocol used in [TSAR](https://www-soc.lip6.fr/trac/tsar/wiki/Specification).
@@ -28,3 +29,9 @@ This repository is a companion to our [MARS2018](http://mars-workshop.org/mars20
 
 All model files in this repository can be freely used and modified. 
 The various reports remain the copyrighted property of their respective authors, they may be copied and distributed but not edited.
+
+<div style="font-size: small;margin-top: 25pt"><!--CC license-->
+<a class=no_symb href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
+<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a>
+This work is licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.</div>
+</div><!--end CC license-->
